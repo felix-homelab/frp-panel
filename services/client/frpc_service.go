@@ -7,20 +7,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/VaalaCat/frp-panel/internal/frpx"
 	"github.com/VaalaCat/frp-panel/services/app"
 	"github.com/VaalaCat/frp-panel/utils"
 	"github.com/VaalaCat/frp-panel/utils/logger"
-	"github.com/fatedier/frp/client"
-	"github.com/fatedier/frp/client/proxy"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
-	"github.com/fatedier/frp/pkg/config/v1/validation"
-	"github.com/fatedier/frp/pkg/featuregate"
 	"github.com/samber/lo"
 	"github.com/sourcegraph/conc"
 )
 
 type clientImpl struct {
-	cli         *client.Service
+	cli         *frpx.ClientService
 	Common      *v1.ClientCommonConfig
 	ProxyCfgs   map[string]v1.ProxyConfigurer
 	VisitorCfgs map[string]v1.VisitorConfigurer
@@ -34,12 +31,12 @@ func NewClientHandler(commonCfg *v1.ClientCommonConfig,
 	ctx := context.Background()
 
 	if len(commonCfg.FeatureGates) > 0 {
-		if err := featuregate.SetFromMap(commonCfg.FeatureGates); err != nil {
+		if err := frpx.SetFeatureGates(commonCfg.FeatureGates); err != nil {
 			logger.Logger(ctx).WithError(err).Errorf("there's a feature gate settings, but set failed: %+v, skip", commonCfg.FeatureGates)
 		}
 	}
 
-	warning, err := validation.ValidateAllClientConfig(commonCfg, proxyCfgs, visitorCfgs)
+	warning, err := frpx.ValidateClientConfig(commonCfg, proxyCfgs, visitorCfgs)
 	if warning != nil {
 		logger.Logger(ctx).WithError(err).Warnf("validate client config warning: %+v", warning)
 	}
@@ -47,7 +44,7 @@ func NewClientHandler(commonCfg *v1.ClientCommonConfig,
 		logger.Logger(ctx).Panic(err)
 	}
 
-	cli, err := client.NewService(client.ServiceOptions{
+	cli, err := frpx.NewClientService(frpx.ClientOptions{
 		Common:      commonCfg,
 		ProxyCfgs:   proxyCfgs,
 		VisitorCfgs: visitorCfgs,
@@ -132,7 +129,7 @@ func (c *clientImpl) RemoveVisitor(visitorCfg v1.VisitorConfigurer) {
 	c.cli.UpdateAllConfigurer(lo.Values(c.ProxyCfgs), lo.Values(c.VisitorCfgs))
 }
 
-func (c *clientImpl) GetProxyStatus(name string) (*proxy.WorkingStatus, bool) {
+func (c *clientImpl) GetProxyStatus(name string) (*frpx.ProxyWorkingStatus, bool) {
 	return c.cli.StatusExporter().GetProxyStatus(name)
 }
 
@@ -156,7 +153,7 @@ func (c *clientImpl) Wait() {
 	<-c.done
 }
 
-func handleTermSignal(svr *client.Service) {
+func handleTermSignal(svr *frpx.ClientService) {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch

@@ -1,22 +1,22 @@
 package utils
 
 import (
-	"github.com/fatedier/frp/pkg/config"
+	"github.com/VaalaCat/frp-panel/internal/frpx"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
 	"github.com/samber/lo"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-func LoadContentWithTemplate(content []byte, values *config.Values) ([]byte, error) {
-	return config.RenderWithTemplate(content, values)
+func LoadContentWithTemplate(content []byte, values *frpx.TemplateValues) ([]byte, error) {
+	return frpx.RenderTemplate(content, values)
 }
 
 func LoadConfigureFromContent(content []byte, c any, strict bool) error {
-	ans, err := LoadContentWithTemplate(content, config.GetValues())
+	ans, err := LoadContentWithTemplate(content, frpx.TemplateDefaults())
 	if err != nil {
 		return err
 	}
-	return config.LoadConfigure(ans, c, strict)
+	return frpx.DecodeConfig(ans, c, strict)
 }
 
 func LoadProxiesFromContent(content []byte) ([]v1.TypedProxyConfig, error) {
@@ -92,10 +92,10 @@ func LoadClientConfig(content []byte, strict bool) (
 	cliCfg.Complete()
 
 	for _, c := range proxyCfgs {
-		c.Complete(cliCfg.User)
+		frpx.CompleteProxy(c, cliCfg)
 	}
 	for _, c := range visitorCfgs {
-		c.Complete(cliCfg)
+		frpx.CompleteVisitor(c, cliCfg)
 	}
 	return cliCfg, proxyCfgs, visitorCfgs, nil
 }

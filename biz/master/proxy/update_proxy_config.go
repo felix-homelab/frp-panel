@@ -6,6 +6,7 @@ import (
 	"github.com/VaalaCat/frp-panel/biz/master/client"
 	"github.com/VaalaCat/frp-panel/common"
 	"github.com/VaalaCat/frp-panel/defs"
+	"github.com/VaalaCat/frp-panel/internal/frpx"
 	"github.com/VaalaCat/frp-panel/models"
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/services/app"
@@ -13,7 +14,6 @@ import (
 	"github.com/VaalaCat/frp-panel/utils"
 	"github.com/VaalaCat/frp-panel/utils/logger"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
-	"github.com/fatedier/frp/pkg/msg"
 	"github.com/samber/lo"
 )
 
@@ -148,7 +148,7 @@ func UpdateWorkerLoadBalancerGroup(typedProxyCfg v1.TypedProxyConfig) v1.TypedPr
 		}
 	}
 	httpProxyCfg := &v1.HTTPProxyConfig{}
-	msg := &msg.NewProxy{}
+	msg := &frpx.NewProxyMsg{}
 	typedProxyCfg.ProxyConfigurer.MarshalToMsg(msg)
 	httpProxyCfg.UnmarshalFromMsg(msg)
 

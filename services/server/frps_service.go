@@ -4,17 +4,15 @@ import (
 	"context"
 	"sync"
 
+	"github.com/VaalaCat/frp-panel/internal/frpx"
 	"github.com/VaalaCat/frp-panel/services/app"
 	"github.com/VaalaCat/frp-panel/utils/logger"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
-	"github.com/fatedier/frp/pkg/config/v1/validation"
-	"github.com/fatedier/frp/pkg/metrics/mem"
-	"github.com/fatedier/frp/server"
 	"github.com/sourcegraph/conc"
 )
 
 type serverImpl struct {
-	srv       *server.Service
+	srv       *frpx.ServerService
 	Common    *v1.ServerConfig
 	firstSync sync.Once
 }
@@ -23,7 +21,7 @@ func NewServerHandler(svrCfg *v1.ServerConfig) app.ServerHandler {
 	svrCfg.Complete()
 	ctx := context.Background()
 
-	warning, err := validation.ValidateServerConfig(svrCfg)
+	warning, err := frpx.ValidateServerConfig(svrCfg)
 	if warning != nil {
 		logger.Logger(ctx).WithError(err).Warnf("validate server config warning: %+v", warning)
 	}
@@ -31,9 +29,9 @@ func NewServerHandler(svrCfg *v1.ServerConfig) app.ServerHandler {
 		logger.Logger(ctx).Panic(err)
 	}
 
-	var svr *server.Service
+	var svr *frpx.ServerService
 
-	if svr, err = server.NewService(svrCfg); err != nil {
+	if svr, err = frpx.NewServerService(svrCfg); err != nil {
 		logger.Logger(ctx).WithError(err).Panic("cannot create server, exit and restart")
 	}
 
@@ -69,12 +67,12 @@ func (s *serverImpl) GetCommonCfg() *v1.ServerConfig {
 	return s.Common
 }
 
-func (s *serverImpl) GetMem() *mem.ServerStats {
-	return mem.StatsCollector.GetServer()
+func (s *serverImpl) GetMem() *frpx.ServerStats {
+	return frpx.ServerStatsSnapshot()
 }
 
-func (s *serverImpl) GetProxyStatsByType(proxyType v1.ProxyType) []*mem.ProxyStats {
-	return mem.StatsCollector.GetProxiesByType(string(proxyType))
+func (s *serverImpl) GetProxyStatsByType(proxyType v1.ProxyType) []*frpx.ProxyStats {
+	return frpx.ProxyStatsByType(proxyType)
 }
 
 func (s *serverImpl) IsFirstSync() bool {

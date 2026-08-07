@@ -3,8 +3,8 @@ package tunnel
 import (
 	"sync"
 
+	"github.com/VaalaCat/frp-panel/internal/frpx"
 	"github.com/VaalaCat/frp-panel/services/app"
-	"github.com/fatedier/frp/pkg/metrics"
 )
 
 type serverController struct {
@@ -12,8 +12,8 @@ type serverController struct {
 }
 
 func NewServerController() app.ServerController {
-	metrics.EnableMem()
-	metrics.EnablePrometheus()
+	frpx.EnableMemMetrics()
+	frpx.EnablePrometheusMetrics()
 	return &serverController{
 		servers: &sync.Map{},
 	}

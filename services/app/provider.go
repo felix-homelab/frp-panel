@@ -5,13 +5,12 @@ import (
 	"time"
 
 	"github.com/VaalaCat/frp-panel/defs"
+	"github.com/VaalaCat/frp-panel/internal/frpx"
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/utils"
 	"github.com/casbin/casbin/v2"
 
-	"github.com/fatedier/frp/client/proxy"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
-	"github.com/fatedier/frp/pkg/metrics/mem"
 	"gorm.io/gorm"
 )
 
@@ -103,7 +102,7 @@ type ClientHandler interface {
 	AddVisitor(v1.VisitorConfigurer)
 	RemoveProxy(v1.ProxyConfigurer)
 	RemoveVisitor(v1.VisitorConfigurer)
-	GetProxyStatus(string) (*proxy.WorkingStatus, bool)
+	GetProxyStatus(string) (*frpx.ProxyWorkingStatus, bool)
 	GetCommonCfg() *v1.ClientCommonConfig
 	GetProxyCfgs() map[string]v1.ProxyConfigurer
 	GetVisitorCfgs() map[string]v1.VisitorConfigurer
@@ -148,8 +147,8 @@ type ServerHandler interface {
 	Stop()
 	IsFirstSync() bool
 	GetCommonCfg() *v1.ServerConfig
-	GetMem() *mem.ServerStats
-	GetProxyStatsByType(v1.ProxyType) []*mem.ProxyStats
+	GetMem() *frpx.ServerStats
+	GetProxyStatsByType(v1.ProxyType) []*frpx.ProxyStats
 }
 
 // rpc/master.go
