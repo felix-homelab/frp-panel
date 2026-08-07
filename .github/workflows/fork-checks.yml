@@ -1,0 +1,51 @@
+# Fork-local checks.
+#
+# This is a NEW workflow file rather than an edit to master-merge-check.yml on purpose:
+# this repository is a fork, and a new file can never produce a rebase conflict against
+# upstream, whereas editing the shared workflow would conflict on every upstream change.
+#
+# It also deliberately does NOT enable `go test ./...`. That target is red for a reason
+# unrelated to this fork -- services/workerd.TestRunWorker hardcodes /home/coder/... paths
+# and only passes in the original author's dev container. Turning it on would make every
+# run look broken. The package list below is the subset that actually passes.
+name: fork checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          # Tracks the go directive in go.mod, so bumping frp (which can raise the
+          # required Go version) does not also require editing this file.
+          go-version-file: go.mod
+          cache: true
+
+      # cmd/frpp/main.go has `//go:embed all:out`, and cmd/frpp/out is gitignored because
+      # it is the Next.js static export. Without it, one broken package aborts the entire
+      # ./... walk and every Go command fails. The frontend is not needed for these checks.
+      - name: Satisfy the frontend embed
+        run: mkdir -p cmd/frpp/out && touch cmd/frpp/out/.gitkeep
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./conf/... ./internal/... ./services/... ./utils/... ./biz/...
+
+      - name: Unit tests
+        run: go test ./conf/... ./models/... ./services/wg/... ./utils/... ./internal/...
+
+      # The real gate for an frp upgrade: stands up a live frps + frpc in one process and
+      # pushes bytes through tcp, udp, http, https, stcp, sudp and tcpmux.
+      - name: Tunnel integration tests
+        run: go test -tags integration -run TestTunnelMatrix -timeout 5m ./internal/frpx/...
