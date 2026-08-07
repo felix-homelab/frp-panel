@@ -3,11 +3,11 @@ package auth
 import (
 	"net/http"
 
+	"github.com/VaalaCat/frp-panel/internal/frpx"
 	"github.com/VaalaCat/frp-panel/services/app"
 	"github.com/VaalaCat/frp-panel/services/cache"
 	"github.com/VaalaCat/frp-panel/services/dao"
 	"github.com/VaalaCat/frp-panel/utils/logger"
-	plugin "github.com/fatedier/frp/pkg/plugin/server"
 	"github.com/gin-gonic/gin"
 )
 
@@ -45,8 +45,8 @@ func MakeGinHandlerFunc(appInstance app.Application, handler HandlerFunc) gin.Ha
 }
 
 func HandleLogin(ctx *app.Context) (interface{}, error) {
-	var r plugin.Request
-	var content plugin.LoginContent
+	var r frpx.PluginRequest
+	var content frpx.PluginLoginContent
 	r.Content = &content
 	if err := ctx.GetGinCtx().BindJSON(&r); err != nil {
 		return nil, &HTTPError{
@@ -55,7 +55,7 @@ func HandleLogin(ctx *app.Context) (interface{}, error) {
 		}
 	}
 
-	var res plugin.Response
+	var res frpx.PluginResponse
 	token := content.Metas["token"]
 	if len(content.User) == 0 || len(token) == 0 {
 		res.Reject = true

@@ -10,17 +10,17 @@ import (
 	"strconv"
 	"strings"
 
-	frplog "github.com/fatedier/frp/pkg/util/log"
+	"github.com/VaalaCat/frp-panel/internal/frpx"
 	"github.com/fatedier/golib/log"
 	"github.com/sirupsen/logrus"
 )
 
 func initFrpLogger(frpLogLevel log.Level) {
-	frplog.Logger = log.New(
+	frpx.SetFRPLogger(log.New(
 		log.WithCaller(true),
 		log.AddCallerSkip(1),
 		log.WithLevel(frpLogLevel),
-		log.WithOutput(LoggerWriter("frp", logrus.InfoLevel)))
+		log.WithOutput(LoggerWriter("frp", logrus.InfoLevel))))
 }
 
 func InitLogger() {
