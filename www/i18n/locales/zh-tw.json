@@ -544,6 +544,15 @@
     "list": {
       "placeholder": "請輸入...",
       "add": "添加"
+    },
+    "kv": {
+      "key_placeholder": "鍵",
+      "value_placeholder": "值",
+      "add": "新增",
+      "reserved": "由面板管理，無法在此編輯"
+    },
+    "select": {
+      "unset": "未設定"
     }
   },
   "traffic": {
@@ -598,7 +607,55 @@
         "title": "節點 {{id}} 的備注",
         "hint": "可以到高級模式修改備注哦！",
         "empty": "空空如也"
-      }
+      },
+      "not_loaded": "用戶端設定尚未載入完成，請稍候再儲存。",
+      "protocol_description": "伺服器連接埠由此推導；若設定了 frps URL，則以其協定為準。",
+      "tls": {
+        "enable": "啟用 TLS",
+        "disable_custom_first_byte": "停用自訂 TLS 首位元組",
+        "cert_file": "憑證檔案",
+        "key_file": "私鑰檔案",
+        "trusted_ca_file": "受信任 CA 檔案",
+        "server_name": "伺服器名稱"
+      },
+      "wire_protocol": "內部通訊協定",
+      "wire_protocol_description": "v2 為控制通道增加 AEAD 加密。",
+      "wire_protocol_locked": "v2 不可用：需要 frps v0.69 以上，且目前無法確認該伺服器版本。",
+      "nat_hole_stun_server": "STUN 伺服器",
+      "nat_hole_stun_server_description": "XTCP 打洞所需，frp 已提供預設值。",
+      "dns_server": "DNS 伺服器",
+      "proxy_url": "出站代理 URL",
+      "proxy_url_description": "也會從節點的 http_proxy 環境變數讀取。",
+      "connect_server_local_ip": "連線時使用的本機 IP",
+      "pool_count": "連線池大小",
+      "tcp_mux": "TCP 多工",
+      "tcp_mux_keepalive_interval": "TCP 多工保活間隔（秒）",
+      "heartbeat_interval": "心跳間隔（秒）",
+      "heartbeat_timeout": "心跳逾時（秒）",
+      "heartbeat_disabled_hint": "-1 表示關閉；開啟 TCP 多工時預設如此。",
+      "dial_server_timeout": "連線逾時（秒）",
+      "dial_server_keepalive": "連線保活（秒）",
+      "quic_keepalive_period": "QUIC 保活週期（秒）",
+      "quic_max_idle_timeout": "QUIC 最大閒置逾時（秒）",
+      "quic_max_incoming_streams": "QUIC 最大入站串流數量",
+      "web_server_redundant_hint": "內建 Web 服務與本面板功能基本重複。",
+      "log": {
+        "to": "日誌輸出",
+        "level": "日誌等級",
+        "max_days": "日誌保留天數",
+        "disable_print_color": "停用彩色輸出"
+      },
+      "web_server": {
+        "addr": "Web 服務監聽位址",
+        "port": "Web 服務連接埠",
+        "user": "Web 服務使用者名稱",
+        "password": "Web 服務密碼",
+        "pprof_enable": "啟用 pprof"
+      },
+      "login_fail_exit": "登入失敗時結束",
+      "udp_packet_size": "UDP 封包大小（位元組）",
+      "metadatas": "中繼資料",
+      "metadatas_description": "灰色項目為面板自身的認證鍵，儲存時會自動保留。"
     },
     "plugins": {
       "local_addr": "本地地址",
@@ -612,6 +669,13 @@
       "http_user": "HTTP 用戶名",
       "http_password": "HTTP 密碼",
       "unix_domain_socket_path": "Unix 域套接字路徑"
+    },
+    "section": {
+      "tls": "TLS",
+      "network": "網路與 NAT",
+      "tuning": "連線調校",
+      "logging": "日誌與內建 Web 服務",
+      "advanced": "進階"
     }
   },
   "proxy": {
@@ -650,13 +714,69 @@
       "enable_http_auth": "啟用 HTTP 認證",
       "username": "用戶名",
       "password": "密碼",
-      "subdomain_placeholder": "請輸入子域名"
+      "subdomain_placeholder": "請輸入子域名",
+      "unsupported_type": {
+        "title": "暫無 \"{{type}}\" 類型的表單",
+        "description": "請開啟進階模式，以原始 JSON 形式編輯此代理。"
+      },
+      "allow_users": "允許的使用者",
+      "allow_users_description": "允許連線的面板帳戶名稱，填寫 * 表示允許任意使用者。",
+      "visitor_required_hint": "該類型的隧道無法直接存取，需要在另一個用戶端上建立訪問者（visitor）連線。",
+      "stun_hint": "XTCP 需要在用戶端設定中填寫可用的 STUN 伺服器（natHoleStunServer）。",
+      "https_port_hint": "需要在伺服器設定 vhostHTTPSPort，否則 frps 不會監聽 HTTPS。",
+      "tcpmux_port_hint": "需要在伺服器設定 tcpmuxHTTPConnectPort。",
+      "multiplexer": "多工器",
+      "domain_required": "請填寫子網域或至少一個自訂網域",
+      "transport": {
+        "title": "傳輸",
+        "use_encryption": "加密傳輸",
+        "use_encryption_description": "對用戶端與伺服器之間的流量加密。",
+        "use_compression": "壓縮傳輸",
+        "use_compression_description": "以 CPU 換頻寬，在低速連線上效果明顯。",
+        "bandwidth_limit": "頻寬限制",
+        "bandwidth_limit_mode": "限速位置",
+        "bandwidth_limit_mode_default": "用戶端（預設）",
+        "proxy_protocol_version": "PROXY 协议",
+        "proxy_protocol_off": "关闭",
+        "proxy_protocol_description": "把真實用戶端位址傳給本機服務，本機服務需要支援該協定。"
+      },
+      "health_check": {
+        "title": "健康检查",
+        "type": "檢查方式",
+        "off": "关闭",
+        "path": "請求路徑",
+        "interval_seconds": "檢查間隔（秒）",
+        "timeout_seconds": "逾時時間（秒）",
+        "max_failed": "連續失敗次數上限"
+      },
+      "load_balancer": {
+        "title": "负载均衡",
+        "group": "群組",
+        "group_key": "群組金鑰",
+        "managed_hint": "該隧道屬於 Worker 入口，群組由面板管理。"
+      },
+      "http": {
+        "title": "HTTP 选项",
+        "host_header_rewrite": "重寫 Host 標頭",
+        "request_headers": "請求標頭",
+        "route_by_http_user": "按 HTTP 使用者路由"
+      },
+      "metadata": {
+        "title": "中繼資料",
+        "metadatas": "中繼資料",
+        "annotations": "註解",
+        "reserved_hint": "灰色項目由面板管理，儲存時會自動保留。"
+      }
     },
     "type": {
       "http": "HTTP",
       "tcp": "TCP",
       "udp": "UDP",
-      "stcp": "STCP"
+      "stcp": "STCP",
+      "https": "HTTPS",
+      "tcpmux": "TCPMUX",
+      "xtcp": "XTCP",
+      "sudp": "SUDP"
     },
     "config": {
       "create": "創建",
@@ -673,7 +793,8 @@
       "invalid_json": "JSON非法",
       "draft": "暫存",
       "invalid_config": "配置不正確",
-      "submit": "提交"
+      "submit": "提交",
+      "single_proxy_only": "請只提供一個代理設定，伺服器每次請求僅接受一個代理。"
     },
     "action": {
       "delete_success": "刪除成功",
@@ -743,7 +864,63 @@
       "vhost_http_port": "HTTP 監聽端口",
       "subdomain_host": "域名後綴",
       "quic_bind_port": "Quic 監聽端口",
-      "kcp_bind_port": "KCP 監聽端口"
+      "kcp_bind_port": "KCP 監聽端口",
+      "vhost_https_port": "HTTPS 連接埠",
+      "vhost_http_timeout": "HTTP 回應標頭逾時（秒）",
+      "tcpmux_http_connect_port": "TCPMUX HTTP CONNECT 連接埠",
+      "tcpmux_passthrough": "TCPMUX 透傳",
+      "custom_404_page": "自訂 404 頁面",
+      "allow_ports": "允許的遠端連接埠",
+      "allow_ports_description": "用戶端可繫結的連接埠範圍，例如 1000-2000, 3000。留空表示不限制。",
+      "max_ports_per_client": "每個用戶端最大連接埠數",
+      "max_ports_per_client_description": "0 表示不限制。",
+      "user_conn_timeout": "使用者連線逾時（秒）",
+      "udp_packet_size": "UDP 封包大小（位元組）",
+      "nathole_reserve_hours": "NAT 打洞分析資料保留（小時）",
+      "detailed_errors_to_client": "向用戶端回傳詳細錯誤",
+      "transport": {
+        "tcp_mux": "TCP 多工",
+        "tcp_mux_keepalive_interval": "TCP 多工保活間隔（秒）",
+        "tcp_keepalive": "TCP 保活（秒）",
+        "disabled_hint": "-1 表示關閉。",
+        "max_pool_count": "最大連線池數量",
+        "heartbeat_timeout": "心跳逾時（秒）",
+        "heartbeat_timeout_description": "開啟 TCP 多工時預設為 -1（關閉）。",
+        "quic_keepalive_period": "QUIC 保活週期（秒）",
+        "quic_max_idle_timeout": "QUIC 最大閒置逾時（秒）",
+        "quic_max_incoming_streams": "QUIC 最大入站串流數量",
+        "tls_force": "強制 TLS",
+        "tls_force_description": "拒絕所有非 TLS 連線的用戶端。",
+        "tls_cert_file": "TLS 憑證檔案",
+        "tls_key_file": "TLS 私鑰檔案",
+        "tls_trusted_ca_file": "受信任 CA 檔案",
+        "tls_server_name": "TLS 伺服器名稱"
+      },
+      "ssh": {
+        "paths_hint": "這些路徑位於伺服器節點自身的檔案系統上。",
+        "bind_port": "SSH 閘道連接埠",
+        "private_key_file": "私鑰檔案",
+        "auto_gen_private_key_path": "自動產生私鑰路徑",
+        "authorized_keys_file": "authorized_keys 檔案"
+      },
+      "web_server": {
+        "port_conflict_hint": "不能與面板節點自身的 API 連接埠衝突，否則 frps 無法啟動。",
+        "addr": "控制台監聽位址",
+        "port": "控制台連接埠",
+        "user": "控制台使用者名稱",
+        "password": "控制台密碼",
+        "assets_dir": "靜態資源目錄",
+        "pprof_enable": "啟用 pprof"
+      },
+      "enable_prometheus": "暴露 Prometheus 指標",
+      "enable_prometheus_description": "透過 frps 控制台提供 /metrics。",
+      "enable_prometheus_needs_port": "請先設定控制台連接埠，/metrics 由 frps 內建 web 服務提供。",
+      "log": {
+        "to": "日誌輸出",
+        "level": "日誌等級",
+        "max_days": "日誌保留天數",
+        "disable_print_color": "停用彩色輸出"
+      }
     },
     "create": {
       "submitting": "正在創建服務端...",
@@ -798,7 +975,15 @@
     "status_offline": "離線",
     "status_error": "錯誤",
     "status_unknown": "未知",
-    "status_pause": "已暫停"
+    "status_pause": "已暫停",
+    "section": {
+      "vhost": "虛擬主機",
+      "security": "安全與限制",
+      "transport": "傳輸與 TLS",
+      "ssh_gateway": "SSH 隧道閘道",
+      "dashboard": "控制台與指標",
+      "logging": "日誌"
+    }
   },
   "auth": {
     "loggingIn": "登錄中，請稍候",
@@ -1035,5 +1220,68 @@
     "save": "保存",
     "save_success": "保存成功",
     "save_error": "保存失敗"
+  },
+  "validation": {
+    "number": "必須為數字",
+    "bandwidth": "請填寫數字並以 KB 或 MB 結尾，例如 1MB",
+    "visitorBindPort": "不能為 0。填寫 -1 表示僅接受被轉發的連線",
+    "annotationKey": "註解鍵格式不正確",
+    "healthCheckPathRequired": "HTTP 健康檢查必須填寫請求路徑",
+    "reservedLoadBalancerGroup": "該群組名稱前綴為面板保留",
+    "required": "此項為必填",
+    "portRange": {
+      "min": "連接埠不能小於 1",
+      "max": "連接埠不能大於 65535"
+    },
+    "ipAddress": "請輸入合法的 IPv4 位址",
+    "host": "請輸入合法的主機名稱或 IP 位址",
+    "portRangeList": "請填寫連接埠或範圍，例如 1000-2000, 3000"
+  },
+  "visitor": {
+    "type": {
+      "stcp": "STCP",
+      "xtcp": "XTCP",
+      "sudp": "SUDP"
+    },
+    "form": {
+      "add": "新增訪問者",
+      "name": "訪問者名稱",
+      "type": "類型",
+      "type_label": "類型：{{type}}",
+      "confirm": "確認",
+      "delete": "刪除",
+      "config": "訪問者",
+      "expand_one": "{{count}} 個訪問者",
+      "expand_other": "{{count}} 個訪問者",
+      "server_name": "目標隧道名稱",
+      "secret_key": "密鑰",
+      "bind_addr": "本機監聽位址",
+      "bind_port": "本機監聽連接埠",
+      "bind_port_hint": "填寫 -1 表示僅接受來自其他訪問者的轉發連線（SUDP 不支援）。",
+      "use_encryption": "加密傳輸",
+      "use_compression": "壓縮傳輸",
+      "protocol": "打洞協定",
+      "protocol_default": "QUIC（預設）",
+      "keep_tunnel_open": "保持隧道常開",
+      "max_retries_an_hour": "每小時最大重試次數",
+      "min_retry_interval": "最小重試間隔（秒）",
+      "fallback_to": "回退到訪問者",
+      "fallback_to_description": "本用戶端上的另一個訪問者，通常是繫結連接埠為 -1 的 STCP 訪問者；打洞逾時後由它接管連線。",
+      "fallback_timeout_ms": "回退逾時（毫秒）",
+      "save_changes": "儲存變更",
+      "unsupported_type": "暫無 \"{{type}}\" 類型訪問者的表單，請使用進階模式以 JSON 編輯。"
+    },
+    "pairing": {
+      "label": "關聯隧道",
+      "placeholder": "選擇隧道以自動填寫名稱與密鑰",
+      "hint_same_server": "只能連線同一伺服器上同類型的隧道。",
+      "empty": "該伺服器上還沒有 {{type}} 類型的隧道，請先建立後再關聯。"
+    },
+    "status": {
+      "create": "新增訪問者",
+      "name_exists": "同名訪問者已存在",
+      "invalid_config": "訪問者設定無效",
+      "staged": "已儲存，請點擊提交下發到用戶端。"
+    }
   }
 }

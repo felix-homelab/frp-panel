@@ -16,8 +16,16 @@ import { updateFRPC } from '@/api/frp'
 import { GetClientResponse } from '@/lib/pb/api_client'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { BaseSelector } from '../base/selector'
 import { ConnectionProtocols } from '@/lib/consts'
+import { ObjToUint8Array } from '@/lib/utils'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Form } from '@/components/ui/form'
+import { SelectField } from '@/components/base/form-field'
+import { ClientCommonConfigSchema, ClientCommonConfigValues } from './form/schema'
+import { FRPCAdvancedSections } from './form/sections'
+import { VisitorSection } from './visitor_form'
+import { TypedVisitorConfig } from '@/types/visitor'
 
 export interface FRPCFormProps {
   clientID: string
@@ -28,18 +36,23 @@ export interface FRPCFormProps {
   refetchClient: (options?: RefetchOptions) => Promise<QueryObserverResult<GetClientResponse, Error>>
   clientProxyConfigs: TypedProxyConfig[]
   setClientProxyConfigs: React.Dispatch<React.SetStateAction<TypedProxyConfig[]>>
+  // Optional so FRPCEditor, which shares this props type, needs no change.
+  clientVisitorConfigs?: TypedVisitorConfig[]
+  setClientVisitorConfigs?: React.Dispatch<React.SetStateAction<TypedVisitorConfig[]>>
 }
 
-export const FRPCForm: React.FC<FRPCFormProps> = ({ clientID, serverID, clientConfig, client, refetchClient, clientProxyConfigs, setClientProxyConfigs, frpsUrl }) => {
+export const FRPCForm: React.FC<FRPCFormProps> = ({ clientID, serverID, clientConfig, client, refetchClient, clientProxyConfigs, setClientProxyConfigs, clientVisitorConfigs = [], setClientVisitorConfigs, frpsUrl }) => {
   const { t } = useTranslation()
   const [proxyType, setProxyType] = useState<ProxyType>('http')
   const [proxyName, setProxyName] = useState<string | undefined>()
-  const [protocol, setProtocol] = useState<string | undefined>("tcp")
+
+  const form = useForm<ClientCommonConfigValues>({
+    resolver: zodResolver(ClientCommonConfigSchema),
+    defaultValues: { transport: { protocol: 'tcp' } },
+  })
 
   useEffect(() => {
-    if (clientConfig.transport?.protocol) {
-      setProtocol(clientConfig.transport?.protocol)
-    }
+    form.reset(clientConfig as ClientCommonConfigValues)
   }, [clientConfig])
 
   const handleTypeChange = (value: string) => {
@@ -70,19 +83,33 @@ export const FRPCForm: React.FC<FRPCFormProps> = ({ clientID, serverID, clientCo
 
   const updateFrpc = useMutation({ mutationFn: updateFRPC })
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (values: ClientCommonConfigValues) => {
+    // The client query is keyed on (clientID, serverID) and has no placeholderData, so
+    // right after the server selector changes `client` is undefined and clientConfig
+    // falls back to {} -- while clientProxyConfigs still holds the previous client's
+    // list. Submitting in that window would write a config built from nothing. Gate on
+    // `client` rather than client.config: a freshly created client legitimately has an
+    // empty config and must stay submittable.
+    if (!client) {
+      toast(t('proxy.status.update'), { description: t('frpc.form.not_loaded') })
+      return
+    }
     try {
       const res = await updateFrpc.mutateAsync({
-        //@ts-ignore
-        config: Buffer.from(
-          JSON.stringify({
-            proxies: clientProxyConfigs,
-            transport: {
-              ...clientConfig.transport,
-              protocol,
-            }
-          } as ClientConfig),
-        ),
+        // Spread the whole stored config: this endpoint replaces it wholesale, so
+        // sending only {proxies, transport} silently erased everything the raw editor
+        // can author (visitors, log, webServer, auth, dnsServer, start, ...). Replace
+        // semantics are deliberate -- they are how the raw editor deletes keys -- so the
+        // fix belongs here, not in a backend merge.
+        config: ObjToUint8Array({
+          ...clientConfig,
+          ...values,
+          proxies: clientProxyConfigs,
+          visitors: clientVisitorConfigs,
+          // Merge rather than replace: `values.transport` is the resolver's output and
+          // carries only the keys this schema declares.
+          transport: { ...clientConfig.transport, ...values.transport },
+        } as ClientConfig),
         serverId: serverID,
         clientId: clientID,
         frpsUrl: frpsUrl,
@@ -119,9 +146,13 @@ export const FRPCForm: React.FC<FRPCFormProps> = ({ clientID, serverID, clientCo
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="http">{t('proxy.type.http')}</SelectItem>
+              <SelectItem value="https">{t('proxy.type.https')}</SelectItem>
               <SelectItem value="tcp">{t('proxy.type.tcp')}</SelectItem>
               <SelectItem value="udp">{t('proxy.type.udp')}</SelectItem>
+              <SelectItem value="tcpmux">{t('proxy.type.tcpmux')}</SelectItem>
               <SelectItem value="stcp">{t('proxy.type.stcp')}</SelectItem>
+              <SelectItem value="xtcp">{t('proxy.type.xtcp')}</SelectItem>
+              <SelectItem value="sudp">{t('proxy.type.sudp')}</SelectItem>
             </SelectContent>
           </Select>
           <Button variant={'outline'} onClick={handleAddProxy}>
@@ -129,11 +160,26 @@ export const FRPCForm: React.FC<FRPCFormProps> = ({ clientID, serverID, clientCo
           </Button>
         </PopoverContent>
       </Popover>
-      <Label className="text-sm font-medium">{t('proxy.form.protocol')}</Label>
-      <BaseSelector value={protocol} setValue={setProtocol}
-        dataList={ConnectionProtocols.map((item) => { return { label: item, value: item } })}
-        placeholder={t('proxy.form.protocol')}
-        label={t('proxy.form.protocol')} />
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleUpdate)} className="space-y-4 px-0.5">
+          <SelectField
+            control={form.control}
+            name="transport.protocol"
+            label={t('proxy.form.protocol')}
+            options={ConnectionProtocols.map((item) => ({ label: item, value: item }))}
+            // Exposed but mediated: the master derives serverPort from this, and the
+            // frpsUrl path overwrites it from the URL scheme. Do not add a serverPort field.
+            description={t('frpc.form.protocol_description')}
+          />
+          <FRPCAdvancedSections
+            control={form.control}
+            reservedMetadatas={{ token: '••••', 'x-vaala-frp-client-id': clientID }}
+            // Fail closed: without a reliable frp version for the target server, a v2
+            // client that cannot reach it fails silently, which is worse than a missing option.
+            allowWireProtocolV2={false}
+          />
+        </form>
+      </Form>
       <Accordion type="single" defaultValue="proxies" collapsible key={clientID + serverID + client}>
         <AccordionItem value="proxies">
           <AccordionTrigger>
@@ -176,12 +222,15 @@ export const FRPCForm: React.FC<FRPCFormProps> = ({ clientID, serverID, clientCo
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-      <Button
-        className="mt-2"
-        onClick={() => {
-          handleUpdate()
-        }}
-      >
+      {setClientVisitorConfigs && (
+        <VisitorSection
+          clientID={clientID}
+          serverID={serverID}
+          clientVisitorConfigs={clientVisitorConfigs}
+          setClientVisitorConfigs={setClientVisitorConfigs}
+        />
+      )}
+      <Button className="mt-2" onClick={form.handleSubmit(handleUpdate)}>
         {t('proxy.form.submit')}
       </Button>
     </div>

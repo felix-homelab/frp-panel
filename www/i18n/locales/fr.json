@@ -552,6 +552,15 @@
     "list": {
       "placeholder": "Veuillez entrer ...",
       "add": "Ajouter"
+    },
+    "kv": {
+      "key_placeholder": "Clé",
+      "value_placeholder": "Valeur",
+      "add": "Ajouter",
+      "reserved": "Géré par le panneau ; non modifiable ici"
+    },
+    "select": {
+      "unset": "Non défini"
     }
   },
   "traffic": {
@@ -606,7 +615,55 @@
         "title": "Commentaire du Nœud {{id}}",
         "hint": "Vous pouvez modifier le commentaire en mode avancé !",
         "empty": "C'est vide..."
-      }
+      },
+      "not_loaded": "La configuration du client est en cours de chargement. Attendez la fin avant d'enregistrer.",
+      "protocol_description": "Le port serveur en découle. Si une URL frps est définie, son schéma prime.",
+      "tls": {
+        "enable": "Activer TLS",
+        "disable_custom_first_byte": "Désactiver le premier octet TLS personnalisé",
+        "cert_file": "Fichier de certificat",
+        "key_file": "Fichier de clé",
+        "trusted_ca_file": "Fichier CA de confiance",
+        "server_name": "Nom du serveur"
+      },
+      "wire_protocol": "Protocole interne",
+      "wire_protocol_description": "v2 ajoute le chiffrement AEAD au canal de contrôle.",
+      "wire_protocol_locked": "v2 indisponible : nécessite frps v0.69+, et la version du serveur n’est pas confirmée.",
+      "nat_hole_stun_server": "Serveur STUN",
+      "nat_hole_stun_server_description": "Requis pour le NAT hole punching XTCP. frp fournit déjà une valeur par défaut.",
+      "dns_server": "Serveur DNS",
+      "proxy_url": "URL du proxy sortant",
+      "proxy_url_description": "Également lu depuis la variable d’environnement http_proxy de l’agent.",
+      "connect_server_local_ip": "IP locale de connexion",
+      "pool_count": "Taille du pool de connexions",
+      "tcp_mux": "Multiplexage TCP",
+      "tcp_mux_keepalive_interval": "Intervalle keepalive TCP mux (secondes)",
+      "heartbeat_interval": "Intervalle de heartbeat (secondes)",
+      "heartbeat_timeout": "Délai de heartbeat (secondes)",
+      "heartbeat_disabled_hint": "-1 le désactive ; valeur par défaut si le multiplexage TCP est actif.",
+      "dial_server_timeout": "Délai de connexion (secondes)",
+      "dial_server_keepalive": "Keepalive de connexion (secondes)",
+      "quic_keepalive_period": "Période keepalive QUIC (secondes)",
+      "quic_max_idle_timeout": "Délai d’inactivité max QUIC (secondes)",
+      "quic_max_incoming_streams": "Flux entrants max QUIC",
+      "web_server_redundant_hint": "Le serveur web de l’agent fait largement doublon avec ce panneau.",
+      "log": {
+        "to": "Destination des journaux",
+        "level": "Niveau de journalisation",
+        "max_days": "Conservation des journaux (jours)",
+        "disable_print_color": "Désactiver la couleur"
+      },
+      "web_server": {
+        "addr": "Adresse du serveur web",
+        "port": "Port du serveur web",
+        "user": "Utilisateur du serveur web",
+        "password": "Mot de passe du serveur web",
+        "pprof_enable": "Activer pprof"
+      },
+      "login_fail_exit": "Quitter en cas d’échec de connexion",
+      "udp_packet_size": "Taille des paquets UDP (octets)",
+      "metadatas": "Métadonnées",
+      "metadatas_description": "Les entrées grisées sont les clés d’auth du panneau et sont conservées."
     },
     "plugins": {
       "local_addr": "Adresse Locale",
@@ -620,6 +677,13 @@
       "http_user": "Utilisateur HTTP",
       "http_password": "Mot de Passe HTTP",
       "unix_domain_socket_path": "Chemin du Socket de Domaine Unix"
+    },
+    "section": {
+      "tls": "TLS",
+      "network": "Réseau et NAT",
+      "tuning": "Réglage des connexions",
+      "logging": "Journaux et serveur web de l’agent",
+      "advanced": "Avancé"
     }
   },
   "proxy": {
@@ -651,7 +715,7 @@
       "enabled": "Activé",
       "use_plugin": "Utiliser un Plugin",
       "save_changes": "Enregistrer les Modifications",
-      "secret_key": "Clé Secrète",
+      "secret_key": "Clé secrète",
       "subdomain": "Sous-domaine",
       "custom_domains": "Domaines Personnalisés",
       "domain_description": "Le sous-domaine et le domaine personnalisé peuvent être configurés en même temps, mais au moins l'un d'eux ne doit pas être vide. Si frps est configuré avec un suffixe de domaine, le domaine personnalisé ne peut pas être un sous-domaine ou un domaine joker du suffixe de domaine.",
@@ -660,13 +724,69 @@
       "enable_http_auth": "Activer l'Authentification HTTP",
       "username": "Nom d'utilisateur",
       "password": "Mot de passe",
-      "subdomain_placeholder": "Entrez le Sous-domaine"
+      "subdomain_placeholder": "Entrez le Sous-domaine",
+      "unsupported_type": {
+        "title": "Pas encore de formulaire pour les proxys « {{type}} »",
+        "description": "Activez le mode avancé pour modifier ce proxy en JSON brut."
+      },
+      "allow_users": "Utilisateurs autorisés",
+      "allow_users_description": "Noms de comptes du panneau autorisés à se connecter. Utilisez * pour tous.",
+      "visitor_required_hint": "Ce type de proxy n'est pas joignable directement : un visiteur sur un autre client doit s'y connecter.",
+      "stun_hint": "XTCP nécessite un serveur STUN joignable (natHoleStunServer) dans la configuration du client.",
+      "https_port_hint": "Nécessite vhostHTTPSPort côté serveur, sans quoi frps n'écoute pas en HTTPS.",
+      "tcpmux_port_hint": "Nécessite tcpmuxHTTPConnectPort côté serveur.",
+      "multiplexer": "Multiplexeur",
+      "domain_required": "Indiquez un sous-domaine ou au moins un domaine personnalisé",
+      "transport": {
+        "title": "Transport",
+        "use_encryption": "Chiffrer le trafic",
+        "use_encryption_description": "Chiffre le trafic entre le client et le serveur.",
+        "use_compression": "Compresser le trafic",
+        "use_compression_description": "Échange du CPU contre de la bande passante. Utile sur liens lents.",
+        "bandwidth_limit": "Limite de bande passante",
+        "bandwidth_limit_mode": "Limite appliquée sur",
+        "bandwidth_limit_mode_default": "Client (par défaut)",
+        "proxy_protocol_version": "Protocole PROXY",
+        "proxy_protocol_off": "Désactivé",
+        "proxy_protocol_description": "Transmet l'adresse réelle du client au service local, qui doit le gérer."
+      },
+      "health_check": {
+        "title": "Vérification de santé",
+        "type": "Type de vérification",
+        "off": "Désactivée",
+        "path": "Chemin de la requête",
+        "interval_seconds": "Intervalle (secondes)",
+        "timeout_seconds": "Délai d’attente (secondes)",
+        "max_failed": "Échecs avant retrait"
+      },
+      "load_balancer": {
+        "title": "Répartition de charge",
+        "group": "Groupe",
+        "group_key": "Clé de groupe",
+        "managed_hint": "Ce proxy appartient à une entrée worker : son groupe est géré par le panneau."
+      },
+      "http": {
+        "title": "Options HTTP",
+        "host_header_rewrite": "Réécrire l’en-tête Host",
+        "request_headers": "En-têtes de requête",
+        "route_by_http_user": "Router par utilisateur HTTP"
+      },
+      "metadata": {
+        "title": "Métadonnées",
+        "metadatas": "Métadonnées",
+        "annotations": "Annotations",
+        "reserved_hint": "Les entrées grisées sont gérées par le panneau et conservées à l’enregistrement."
+      }
     },
     "type": {
       "http": "HTTP",
       "tcp": "TCP",
       "udp": "UDP",
-      "stcp": "STCP"
+      "stcp": "STCP",
+      "https": "HTTPS",
+      "tcpmux": "TCPMUX",
+      "xtcp": "XTCP",
+      "sudp": "SUDP"
     },
     "config": {
       "create": "Créer",
@@ -683,7 +803,8 @@
       "invalid_json": "JSON Invalide",
       "draft": "Brouillon",
       "invalid_config": "Configuration invalide",
-      "submit": "Soumettre"
+      "submit": "Soumettre",
+      "single_proxy_only": "Fournissez exactement un proxy. Le serveur n'en accepte qu'un seul par requête."
     },
     "action": {
       "delete_success": "Suppression Réussie",
@@ -753,7 +874,63 @@
       "vhost_http_port": "Port d'Écoute HTTP",
       "subdomain_host": "Hôte de Sous-domaine",
       "quic_bind_port": "Port de Liaison Quic",
-      "kcp_bind_port": "Port de Liaison KCP"
+      "kcp_bind_port": "Port de Liaison KCP",
+      "vhost_https_port": "Port HTTPS",
+      "vhost_http_timeout": "Délai des en-têtes HTTP (secondes)",
+      "tcpmux_http_connect_port": "Port TCPMUX HTTP CONNECT",
+      "tcpmux_passthrough": "Passthrough TCPMUX",
+      "custom_404_page": "Page 404 personnalisée",
+      "allow_ports": "Ports distants autorisés",
+      "allow_ports_description": "Plages que les clients peuvent utiliser, ex. 1000-2000, 3000. Vide = aucune limite.",
+      "max_ports_per_client": "Ports max par client",
+      "max_ports_per_client_description": "0 signifie illimité.",
+      "user_conn_timeout": "Délai de connexion utilisateur (secondes)",
+      "udp_packet_size": "Taille des paquets UDP (octets)",
+      "nathole_reserve_hours": "Rétention analyse NAT (heures)",
+      "detailed_errors_to_client": "Envoyer les erreurs détaillées aux clients",
+      "transport": {
+        "tcp_mux": "Multiplexage TCP",
+        "tcp_mux_keepalive_interval": "Intervalle keepalive TCP mux (secondes)",
+        "tcp_keepalive": "Keepalive TCP (secondes)",
+        "disabled_hint": "-1 le désactive.",
+        "max_pool_count": "Taille max du pool",
+        "heartbeat_timeout": "Délai de heartbeat (secondes)",
+        "heartbeat_timeout_description": "Vaut -1 (désactivé) par défaut si le multiplexage TCP est actif.",
+        "quic_keepalive_period": "Période keepalive QUIC (secondes)",
+        "quic_max_idle_timeout": "Délai d’inactivité max QUIC (secondes)",
+        "quic_max_incoming_streams": "Flux entrants max QUIC",
+        "tls_force": "Exiger TLS",
+        "tls_force_description": "Refuse tout client ne se connectant pas en TLS.",
+        "tls_cert_file": "Fichier de certificat TLS",
+        "tls_key_file": "Fichier de clé TLS",
+        "tls_trusted_ca_file": "Fichier CA de confiance",
+        "tls_server_name": "Nom de serveur TLS"
+      },
+      "ssh": {
+        "paths_hint": "Ces chemins sont lus sur le système de fichiers de l’agent serveur.",
+        "bind_port": "Port de la passerelle SSH",
+        "private_key_file": "Fichier de clé privée",
+        "auto_gen_private_key_path": "Chemin de clé auto-générée",
+        "authorized_keys_file": "Fichier authorized_keys"
+      },
+      "web_server": {
+        "port_conflict_hint": "Ne doit pas entrer en conflit avec le port API de l’agent, sinon frps ne démarre pas.",
+        "addr": "Adresse du tableau de bord",
+        "port": "Port du tableau de bord",
+        "user": "Utilisateur du tableau de bord",
+        "password": "Mot de passe du tableau de bord",
+        "assets_dir": "Répertoire des ressources",
+        "pprof_enable": "Activer pprof"
+      },
+      "enable_prometheus": "Exposer les métriques Prometheus",
+      "enable_prometheus_description": "Sert /metrics depuis le tableau de bord frps.",
+      "enable_prometheus_needs_port": "Définissez d’abord un port : /metrics est servi par le serveur web de frps.",
+      "log": {
+        "to": "Destination des journaux",
+        "level": "Niveau de journalisation",
+        "max_days": "Conservation des journaux (jours)",
+        "disable_print_color": "Désactiver la couleur"
+      }
     },
     "create": {
       "submitting": "Création du serveur en cours...",
@@ -808,7 +985,15 @@
     "status_offline": "Hors Ligne",
     "status_error": "Erreur",
     "status_unknown": "Inconnu",
-    "status_pause": "En Pause"
+    "status_pause": "En Pause",
+    "section": {
+      "vhost": "Hôtes virtuels",
+      "security": "Sécurité et limites",
+      "transport": "Transport et TLS",
+      "ssh_gateway": "Passerelle SSH",
+      "dashboard": "Tableau de bord et métriques",
+      "logging": "Journalisation"
+    }
   },
   "auth": {
     "loggingIn": "Connexion en cours, veuillez patienter",
@@ -1045,5 +1230,68 @@
     "save": "Enregistrer",
     "save_success": "Enregistrement réussi",
     "save_error": "Échec de l'enregistrement"
+  },
+  "validation": {
+    "number": "Doit être un nombre",
+    "bandwidth": "Indiquez un nombre suivi de KB ou MB, par ex. 1MB",
+    "visitorBindPort": "Ne peut pas être 0. Utilisez -1 pour n’accepter que les connexions redirigées",
+    "annotationKey": "Clé d’annotation invalide",
+    "healthCheckPathRequired": "Un chemin est requis pour les vérifications HTTP",
+    "reservedLoadBalancerGroup": "Ce préfixe de groupe est réservé par le panneau",
+    "required": "Ce champ est obligatoire",
+    "portRange": {
+      "min": "Le port doit être au minimum 1",
+      "max": "Le port doit être au maximum 65535"
+    },
+    "ipAddress": "Saisissez une adresse IPv4 valide",
+    "host": "Saisissez un hôte ou une IP valide",
+    "portRangeList": "Utilisez des ports ou plages, ex. 1000-2000, 3000"
+  },
+  "visitor": {
+    "type": {
+      "stcp": "STCP",
+      "xtcp": "XTCP",
+      "sudp": "SUDP"
+    },
+    "form": {
+      "add": "Ajouter un visiteur",
+      "name": "Nom du visiteur",
+      "type": "Type",
+      "type_label": "Type : {{type}}",
+      "confirm": "Confirmer",
+      "delete": "Supprimer",
+      "config": "Visiteurs",
+      "expand_one": "{{count}} visiteur",
+      "expand_other": "{{count}} visiteurs",
+      "server_name": "Nom du proxy cible",
+      "secret_key": "Clé secrète",
+      "bind_addr": "Adresse d’écoute locale",
+      "bind_port": "Port d’écoute local",
+      "bind_port_hint": "Utilisez -1 pour n’accepter que les connexions redirigées par un autre visiteur (non pris en charge en SUDP).",
+      "use_encryption": "Chiffrer le trafic",
+      "use_compression": "Compresser le trafic",
+      "protocol": "Protocole de hole punching",
+      "protocol_default": "QUIC (par défaut)",
+      "keep_tunnel_open": "Garder le tunnel ouvert",
+      "max_retries_an_hour": "Tentatives max par heure",
+      "min_retry_interval": "Intervalle min entre tentatives (secondes)",
+      "fallback_to": "Repli vers le visiteur",
+      "fallback_to_description": "Un autre visiteur de ce client, typiquement un visiteur STCP avec le port -1, utilisé si le hole punching échoue.",
+      "fallback_timeout_ms": "Délai de repli (ms)",
+      "save_changes": "Enregistrer",
+      "unsupported_type": "Pas encore de formulaire pour les visiteurs « {{type}} ». Utilisez le mode avancé."
+    },
+    "pairing": {
+      "label": "Associer à un proxy",
+      "placeholder": "Choisissez un proxy pour remplir le nom et la clé",
+      "hint_same_server": "Seuls les proxys du même type sur le même serveur sont joignables.",
+      "empty": "Aucun proxy {{type}} sur ce serveur. Créez-en un puis associez-le ici."
+    },
+    "status": {
+      "create": "Ajouter un visiteur",
+      "name_exists": "Un visiteur portant ce nom existe déjà",
+      "invalid_config": "Configuration de visiteur invalide",
+      "staged": "Enregistré. Cliquez sur Soumettre pour l’envoyer au client."
+    }
   }
 }

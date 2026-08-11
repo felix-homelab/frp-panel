@@ -544,6 +544,15 @@
     "list": {
       "placeholder": "请输入...",
       "add": "添加"
+    },
+    "kv": {
+      "key_placeholder": "键",
+      "value_placeholder": "值",
+      "add": "添加",
+      "reserved": "由面板管理，无法在此编辑"
+    },
+    "select": {
+      "unset": "未设置"
     }
   },
   "traffic": {
@@ -598,7 +607,55 @@
         "title": "节点 {{id}} 的备注",
         "hint": "可以到高级模式修改备注哦！",
         "empty": "空空如也"
-      }
+      },
+      "not_loaded": "客户端配置尚未加载完成，请稍候再保存。",
+      "protocol_description": "服务端端口由此推导；若设置了 frps URL，则以其协议为准。",
+      "tls": {
+        "enable": "启用 TLS",
+        "disable_custom_first_byte": "禁用自定义 TLS 首字节",
+        "cert_file": "证书文件",
+        "key_file": "私钥文件",
+        "trusted_ca_file": "受信任 CA 文件",
+        "server_name": "服务器名称"
+      },
+      "wire_protocol": "内部通信协议",
+      "wire_protocol_description": "v2 为控制信道增加 AEAD 加密。",
+      "wire_protocol_locked": "v2 不可用：需要 frps v0.69 及以上，且当前无法确认该服务端版本。",
+      "nat_hole_stun_server": "STUN 服务器",
+      "nat_hole_stun_server_description": "XTCP 打洞所需，frp 已提供默认值。",
+      "dns_server": "DNS 服务器",
+      "proxy_url": "出站代理 URL",
+      "proxy_url_description": "也会从节点的 http_proxy 环境变量读取。",
+      "connect_server_local_ip": "连接时使用的本地 IP",
+      "pool_count": "连接池大小",
+      "tcp_mux": "TCP 多路复用",
+      "tcp_mux_keepalive_interval": "TCP 多路复用保活间隔（秒）",
+      "heartbeat_interval": "心跳间隔（秒）",
+      "heartbeat_timeout": "心跳超时（秒）",
+      "heartbeat_disabled_hint": "-1 表示关闭；开启 TCP 多路复用时默认如此。",
+      "dial_server_timeout": "连接超时（秒）",
+      "dial_server_keepalive": "连接保活（秒）",
+      "quic_keepalive_period": "QUIC 保活周期（秒）",
+      "quic_max_idle_timeout": "QUIC 最大空闲超时（秒）",
+      "quic_max_incoming_streams": "QUIC 最大入站流数量",
+      "web_server_redundant_hint": "内置 Web 服务与本面板功能基本重复。",
+      "log": {
+        "to": "日志输出",
+        "level": "日志级别",
+        "max_days": "日志保留天数",
+        "disable_print_color": "禁用彩色输出"
+      },
+      "web_server": {
+        "addr": "Web 服务监听地址",
+        "port": "Web 服务端口",
+        "user": "Web 服务用户名",
+        "password": "Web 服务密码",
+        "pprof_enable": "启用 pprof"
+      },
+      "login_fail_exit": "登录失败时退出",
+      "udp_packet_size": "UDP 包大小（字节）",
+      "metadatas": "元数据",
+      "metadatas_description": "灰色条目为面板自身的认证键，保存时会自动保留。"
     },
     "plugins": {
       "local_addr": "本地地址",
@@ -612,6 +669,13 @@
       "http_user": "HTTP 用户名",
       "http_password": "HTTP 密码",
       "unix_domain_socket_path": "Unix 域套接字路径"
+    },
+    "section": {
+      "tls": "TLS",
+      "network": "网络与 NAT",
+      "tuning": "连接调优",
+      "logging": "日志与内置 Web 服务",
+      "advanced": "高级"
     }
   },
   "proxy": {
@@ -650,13 +714,69 @@
       "enable_http_auth": "启用 HTTP 认证",
       "username": "用户名",
       "password": "密码",
-      "subdomain_placeholder": "请输入子域名"
+      "subdomain_placeholder": "请输入子域名",
+      "unsupported_type": {
+        "title": "暂无 \"{{type}}\" 类型的表单",
+        "description": "请开启高级模式，以原始 JSON 形式编辑此代理。"
+      },
+      "allow_users": "允许的用户",
+      "allow_users_description": "允许连接的面板账户名，填写 * 表示允许任意用户。",
+      "visitor_required_hint": "该类型的隧道无法直接访问，需要在另一个客户端上创建访问者（visitor）连接。",
+      "stun_hint": "XTCP 需要在客户端配置中填写可用的 STUN 服务器（natHoleStunServer）。",
+      "https_port_hint": "需要在服务端设置 vhostHTTPSPort，否则 frps 不会监听 HTTPS。",
+      "tcpmux_port_hint": "需要在服务端设置 tcpmuxHTTPConnectPort。",
+      "multiplexer": "多路复用器",
+      "domain_required": "请填写子域名或至少一个自定义域名",
+      "transport": {
+        "title": "传输",
+        "use_encryption": "加密传输",
+        "use_encryption_description": "对客户端与服务端之间的流量加密。",
+        "use_compression": "压缩传输",
+        "use_compression_description": "以 CPU 换带宽，在低速链路上效果明显。",
+        "bandwidth_limit": "带宽限制",
+        "bandwidth_limit_mode": "限速位置",
+        "bandwidth_limit_mode_default": "客户端（默认）",
+        "proxy_protocol_version": "PROXY 协议",
+        "proxy_protocol_off": "关闭",
+        "proxy_protocol_description": "把真实客户端地址传给本地服务，本地服务需要支持该协议。"
+      },
+      "health_check": {
+        "title": "健康检查",
+        "type": "检查方式",
+        "off": "关闭",
+        "path": "请求路径",
+        "interval_seconds": "检查间隔（秒）",
+        "timeout_seconds": "超时时间（秒）",
+        "max_failed": "连续失败次数上限"
+      },
+      "load_balancer": {
+        "title": "负载均衡",
+        "group": "分组",
+        "group_key": "分组密钥",
+        "managed_hint": "该隧道属于 Worker 入口，分组由面板管理。"
+      },
+      "http": {
+        "title": "HTTP 选项",
+        "host_header_rewrite": "重写 Host 头",
+        "request_headers": "请求头",
+        "route_by_http_user": "按 HTTP 用户路由"
+      },
+      "metadata": {
+        "title": "元数据",
+        "metadatas": "元数据",
+        "annotations": "注解",
+        "reserved_hint": "灰色条目由面板管理，保存时会自动保留。"
+      }
     },
     "type": {
       "http": "HTTP",
       "tcp": "TCP",
       "udp": "UDP",
-      "stcp": "STCP"
+      "stcp": "STCP",
+      "https": "HTTPS",
+      "tcpmux": "TCPMUX",
+      "xtcp": "XTCP",
+      "sudp": "SUDP"
     },
     "config": {
       "create": "创建",
@@ -673,7 +793,8 @@
       "invalid_json": "JSON非法",
       "draft": "暂存",
       "invalid_config": "配置不正确",
-      "submit": "提交"
+      "submit": "提交",
+      "single_proxy_only": "请只提供一个代理配置，服务端每次请求仅接受一个代理。"
     },
     "action": {
       "delete_success": "删除成功",
@@ -743,7 +864,63 @@
       "vhost_http_port": "HTTP 监听端口",
       "subdomain_host": "域名后缀",
       "quic_bind_port": "Quic 监听端口",
-      "kcp_bind_port": "KCP 监听端口"
+      "kcp_bind_port": "KCP 监听端口",
+      "vhost_https_port": "HTTPS 端口",
+      "vhost_http_timeout": "HTTP 响应头超时（秒）",
+      "tcpmux_http_connect_port": "TCPMUX HTTP CONNECT 端口",
+      "tcpmux_passthrough": "TCPMUX 透传",
+      "custom_404_page": "自定义 404 页面",
+      "allow_ports": "允许的远程端口",
+      "allow_ports_description": "客户端可绑定的端口范围，例如 1000-2000, 3000。留空表示不限制。",
+      "max_ports_per_client": "每个客户端最大端口数",
+      "max_ports_per_client_description": "0 表示不限制。",
+      "user_conn_timeout": "用户连接超时（秒）",
+      "udp_packet_size": "UDP 包大小（字节）",
+      "nathole_reserve_hours": "NAT 打洞分析数据保留（小时）",
+      "detailed_errors_to_client": "向客户端返回详细错误",
+      "transport": {
+        "tcp_mux": "TCP 多路复用",
+        "tcp_mux_keepalive_interval": "TCP 多路复用保活间隔（秒）",
+        "tcp_keepalive": "TCP 保活（秒）",
+        "disabled_hint": "-1 表示关闭。",
+        "max_pool_count": "最大连接池数量",
+        "heartbeat_timeout": "心跳超时（秒）",
+        "heartbeat_timeout_description": "开启 TCP 多路复用时默认为 -1（关闭）。",
+        "quic_keepalive_period": "QUIC 保活周期（秒）",
+        "quic_max_idle_timeout": "QUIC 最大空闲超时（秒）",
+        "quic_max_incoming_streams": "QUIC 最大入站流数量",
+        "tls_force": "强制 TLS",
+        "tls_force_description": "拒绝所有非 TLS 连接的客户端。",
+        "tls_cert_file": "TLS 证书文件",
+        "tls_key_file": "TLS 私钥文件",
+        "tls_trusted_ca_file": "受信任 CA 文件",
+        "tls_server_name": "TLS 服务器名称"
+      },
+      "ssh": {
+        "paths_hint": "这些路径位于服务端节点自身的文件系统上。",
+        "bind_port": "SSH 网关端口",
+        "private_key_file": "私钥文件",
+        "auto_gen_private_key_path": "自动生成私钥路径",
+        "authorized_keys_file": "authorized_keys 文件"
+      },
+      "web_server": {
+        "port_conflict_hint": "不能与面板节点自身的 API 端口冲突，否则 frps 无法启动。",
+        "addr": "控制台监听地址",
+        "port": "控制台端口",
+        "user": "控制台用户名",
+        "password": "控制台密码",
+        "assets_dir": "静态资源目录",
+        "pprof_enable": "启用 pprof"
+      },
+      "enable_prometheus": "暴露 Prometheus 指标",
+      "enable_prometheus_description": "通过 frps 控制台提供 /metrics。",
+      "enable_prometheus_needs_port": "请先设置控制台端口，/metrics 由 frps 内置 web 服务提供。",
+      "log": {
+        "to": "日志输出",
+        "level": "日志级别",
+        "max_days": "日志保留天数",
+        "disable_print_color": "禁用彩色输出"
+      }
     },
     "create": {
       "submitting": "正在创建服务端...",
@@ -798,7 +975,15 @@
     "status_offline": "离线",
     "status_error": "错误",
     "status_unknown": "未知",
-    "status_pause": "已暂停"
+    "status_pause": "已暂停",
+    "section": {
+      "vhost": "虚拟主机",
+      "security": "安全与限制",
+      "transport": "传输与 TLS",
+      "ssh_gateway": "SSH 隧道网关",
+      "dashboard": "控制台与指标",
+      "logging": "日志"
+    }
   },
   "auth": {
     "loggingIn": "登录中，请稍候",
@@ -1035,5 +1220,68 @@
     "save": "保存",
     "save_success": "保存成功",
     "save_error": "保存失败"
+  },
+  "validation": {
+    "number": "必须为数字",
+    "bandwidth": "请填写数字并以 KB 或 MB 结尾，例如 1MB",
+    "visitorBindPort": "不能为 0。填写 -1 表示仅接受被转发的连接",
+    "annotationKey": "注解键格式不正确",
+    "healthCheckPathRequired": "HTTP 健康检查必须填写请求路径",
+    "reservedLoadBalancerGroup": "该分组名前缀为面板保留",
+    "required": "此项为必填",
+    "portRange": {
+      "min": "端口不能小于 1",
+      "max": "端口不能大于 65535"
+    },
+    "ipAddress": "请输入合法的 IPv4 地址",
+    "host": "请输入合法的主机名或 IP 地址",
+    "portRangeList": "请填写端口或范围，例如 1000-2000, 3000"
+  },
+  "visitor": {
+    "type": {
+      "stcp": "STCP",
+      "xtcp": "XTCP",
+      "sudp": "SUDP"
+    },
+    "form": {
+      "add": "添加访问者",
+      "name": "访问者名称",
+      "type": "类型",
+      "type_label": "类型：{{type}}",
+      "confirm": "确认",
+      "delete": "删除",
+      "config": "访问者",
+      "expand_one": "{{count}} 个访问者",
+      "expand_other": "{{count}} 个访问者",
+      "server_name": "目标隧道名称",
+      "secret_key": "密钥",
+      "bind_addr": "本地监听地址",
+      "bind_port": "本地监听端口",
+      "bind_port_hint": "填写 -1 表示仅接受来自其他访问者的转发连接（SUDP 不支持）。",
+      "use_encryption": "加密传输",
+      "use_compression": "压缩传输",
+      "protocol": "打洞协议",
+      "protocol_default": "QUIC（默认）",
+      "keep_tunnel_open": "保持隧道常开",
+      "max_retries_an_hour": "每小时最大重试次数",
+      "min_retry_interval": "最小重试间隔（秒）",
+      "fallback_to": "回退到访问者",
+      "fallback_to_description": "本客户端上的另一个访问者，通常是绑定端口为 -1 的 STCP 访问者；打洞超时后由它接管连接。",
+      "fallback_timeout_ms": "回退超时（毫秒）",
+      "save_changes": "保存更改",
+      "unsupported_type": "暂无 \"{{type}}\" 类型访问者的表单，请使用高级模式以 JSON 编辑。"
+    },
+    "pairing": {
+      "label": "关联隧道",
+      "placeholder": "选择隧道以自动填写名称与密钥",
+      "hint_same_server": "只能连接同一服务端上同类型的隧道。",
+      "empty": "该服务端上还没有 {{type}} 类型的隧道，请先创建后再关联。"
+    },
+    "status": {
+      "create": "添加访问者",
+      "name_exists": "同名访问者已存在",
+      "invalid_config": "访问者配置无效",
+      "staged": "已保存，请点击提交下发到客户端。"
+    }
   }
 }

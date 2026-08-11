@@ -21,10 +21,13 @@ export interface TLSConfig {
   serverName?: string
 }
 
+export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error'
+
 export interface LogConfig {
   to?: string
-  level?: string
-  maxDays: number
+  // frp validates this against a fixed set; anything else fails config validation.
+  level?: LogLevel
+  maxDays?: number
   disablePrintColor?: boolean
 }
 
@@ -58,7 +61,7 @@ export interface PortsRange {
 
 export type BandwidthUnit = 'MB' | 'KB'
 
-export interface BandwidthQuantity {
-  s: BandwidthUnit // MB or KB
-  i: number // bytes
-}
+// frp marshals BandwidthQuantity as a bare JSON string carrying the suffix, e.g. "1MB"
+// (pkg/config/types/types.go). It is NOT an object -- emitting {s, i} is a hard failure
+// at the strict decoder. Empty string means unset.
+export type BandwidthQuantity = string

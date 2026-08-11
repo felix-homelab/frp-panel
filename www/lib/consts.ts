@@ -2,6 +2,7 @@ import * as z from 'zod'
 import { Client, Server } from './pb/common'
 import { GetPlatformInfoResponse } from './pb/api_user'
 import { TypedProxyConfig } from '@/types/proxy'
+import { TypedVisitorConfig } from '@/types/visitor'
 
 // 延迟加载前端首选项，避免 SSR 期间引用 window/localStorage
 type FrontendPreferenceLazy = {
@@ -38,6 +39,59 @@ export const ZodPortOptionalSchema = z.coerce
   .number({ required_error: 'validation.required' })
   .min(1, { message: 'validation.portRange.min' })
   .max(65535, { message: 'validation.portRange.max' })
+  .optional()
+
+// z.coerce.number().optional() turns '' into 0 rather than undefined, so clearing an
+// optional numeric field would emit an explicit 0. Preprocess the empty cases away first.
+const emptyToUndefined = (v: unknown) => (v === '' || v === null ? undefined : v)
+
+export const ZodOptionalIntSchema = z.preprocess(
+  emptyToUndefined,
+  z.coerce.number({ invalid_type_error: 'validation.number' }).int().min(0).optional(),
+)
+
+export const ZodOptionalSecondsSchema = z.preprocess(
+  emptyToUndefined,
+  z.coerce.number({ invalid_type_error: 'validation.number' }).int().min(1).max(86400).optional(),
+)
+
+// The stored blob is always fully Complete()d by the master before it is saved, so the
+// form loads concrete values the backend itself wrote -- and several of frp's timing
+// fields legitimately complete to -1 ("disabled"): transport.heartbeatTimeout and
+// heartbeatInterval when tcpMux is on, and transport.tcpKeepalive. Validating those with
+// the min(0)/min(1) atoms above would reject a config the panel produced.
+export const ZodOptionalSignedIntSchema = z.preprocess(
+  emptyToUndefined,
+  z.coerce.number({ invalid_type_error: 'validation.number' }).int().min(-1).optional(),
+)
+
+// frp: pkg/config/types/types.go -- "<number><KB|MB>", empty means unset.
+export const ZodBandwidthSchema = z.preprocess(
+  emptyToUndefined,
+  z
+    .string()
+    .regex(/^\d+(\.\d+)?(KB|MB)$/, { message: 'validation.bandwidth' })
+    .optional(),
+)
+
+// frp validation/proxy.go runs annotation keys through k8s IsQualifiedName(lowercased).
+export const AnnotationKeyRegex =
+  /^([a-z0-9]([-a-z0-9.]*[a-z0-9])?\/)?[A-Za-z0-9]([-A-Za-z0-9_.]{0,61}[A-Za-z0-9])?$/
+
+// Mirrors defs/const.go. The panel writes these itself -- models/proxy_config.go derives
+// the worker_id column from them, so letting a user overwrite them orphans the DB link.
+export const RESERVED_PROXY_ANNOTATION_KEYS = ['ingress', 'worker_id', 'load_balancer_group']
+export const MANAGED_LB_GROUP_PREFIX = 'lb-group-'
+
+// frp visitor.go: a negative bindPort means "do not bind; only accept connections
+// redirected from another visitor via fallbackTo" -- the target of an xtcp fallback.
+// Only 0 is rejected. ZodPortSchema's min(1) would block that whole pattern.
+export const ZodVisitorBindPortSchema = z.coerce
+  .number({ required_error: 'validation.required' })
+  .int()
+  .min(-1, { message: 'validation.visitorBindPort' })
+  .max(65535, { message: 'validation.portRange.max' })
+  .refine((v) => v !== 0, { message: 'validation.visitorBindPort' })
 
 export const ZodIPSchema = z
   .string({ required_error: 'validation.required' })
@@ -47,6 +101,45 @@ export const ZodStringSchema = z
   .min(1, { message: 'validation.required' })
 
 export const ZodStringOptionalSchema = z.string().optional()
+
+// ZodIPSchema's dotted-quad regex rejects IPv6 and every hostname, which is wrong for
+// bind addresses -- frps happily binds '::' or a resolvable name.
+export const ZodHostSchema = z
+  .string()
+  .refine(
+    (v) =>
+      v === '' ||
+      /^\d{1,3}(\.\d{1,3}){3}$/.test(v) ||
+      /^[0-9a-fA-F:]+$/.test(v) ||
+      /^[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([-a-zA-Z0-9]*[a-zA-Z0-9])?)*$/.test(v),
+    { message: 'validation.host' },
+  )
+
+// frp's types.PortsRange has no UnmarshalJSON, so the wire form is always the object
+// array. Every field is omitempty, so a 0 must never be emitted.
+export const ZodPortsRangeListSchema = z
+  .array(
+    z.object({
+      start: z.number().int().min(1).max(65535).optional(),
+      end: z.number().int().min(1).max(65535).optional(),
+      single: z.number().int().min(1).max(65535).optional(),
+    }),
+  )
+  .optional()
+  .superRefine((ranges, ctx) => {
+    ranges?.forEach((r, i) => {
+      const isSingle = r.single !== undefined
+      const isSpan = r.start !== undefined && r.end !== undefined
+      if (isSingle === isSpan) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [i], message: 'validation.portRangeList' })
+      } else if (isSpan && r.start! > r.end!) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [i], message: 'validation.portRangeList' })
+      }
+    })
+  })
+
+export const LogLevels = ['trace', 'debug', 'info', 'warn', 'error']
+export const WireProtocols = ['v1', 'v2']
 export const ZodEmailSchema = z
   .string({ required_error: 'validation.required' })
   .min(1, { message: 'validation.required' })
@@ -54,9 +147,57 @@ export const ZodEmailSchema = z
 
 export const ConnectionProtocols = ['tcp', 'kcp', 'quic', 'websocket', 'wss']
 
+// Enumerations frp validates strictly. An out-of-range value is not a cosmetic problem:
+// the agent's config handler is torn down before validation panics, so the client's
+// whole tunnel set goes down until the next valid push. The UI is the real gate.
+export const ProxyProtocolVersions = ['v1', 'v2']
+export const BandwidthLimitModes = ['client', 'server']
+export const HealthCheckTypes = ['tcp', 'http']
+export const TCPMultiplexers = ['httpconnect']
+export const XTCPVisitorProtocols = ['quic', 'kcp']
+
+// Types frp routes by hostname; it rejects them outright without a subdomain or at
+// least one custom domain.
+const DOMAIN_ROUTED_TYPES = ['http', 'https', 'tcpmux']
+
+/**
+ * Values frp validates against a fixed set. These are checked here, and not only in the
+ * form schemas, because this function is the sole gate on the raw-JSON path -- and an
+ * out-of-range value is not cosmetic: the agent tears down the config handler before
+ * validation fails, so the client's whole tunnel set stays down until the next valid push.
+ */
+const enumFieldsValid = (cfg: any): boolean => {
+  const t = cfg.transport
+  if (t?.proxyProtocolVersion && !ProxyProtocolVersions.includes(t.proxyProtocolVersion)) return false
+  if (t?.bandwidthLimitMode && !BandwidthLimitModes.includes(t.bandwidthLimitMode)) return false
+
+  const hc = cfg.healthCheck
+  if (hc?.type) {
+    if (!HealthCheckTypes.includes(hc.type)) return false
+    if (hc.type === 'http' && !hc.path) return false
+  }
+
+  if (cfg.type === 'tcpmux' && !TCPMultiplexers.includes(cfg.multiplexer)) return false
+
+  if (cfg.annotations && Object.keys(cfg.annotations).some((k) => !AnnotationKeyRegex.test(k))) return false
+
+  return true
+}
+
 export const TypedProxyConfigValid = (typedProxyCfg: TypedProxyConfig | undefined): boolean => {
   if (!typedProxyCfg) {
     return false
+  }
+
+  if (!enumFieldsValid(typedProxyCfg)) {
+    return false
+  }
+
+  if (DOMAIN_ROUTED_TYPES.includes(typedProxyCfg.type)) {
+    const domainCfg = typedProxyCfg as { subdomain?: string; customDomains?: string[] }
+    if (!domainCfg.subdomain && !domainCfg.customDomains?.length) {
+      return false
+    }
   }
 
   if (typedProxyCfg.plugin && typedProxyCfg.plugin.type) {
@@ -77,6 +218,25 @@ export const TypedProxyConfigValid = (typedProxyCfg: TypedProxyConfig | undefine
   }
 
   return typedProxyCfg?.localPort && typedProxyCfg.localIP && typedProxyCfg.name && typedProxyCfg.type ? true : false
+}
+
+/**
+ * Mirrors frp's validateVisitorBaseConfig / validateXTCPVisitorConfig.
+ *
+ * This is a guard, not polish: when the agent rejects a config it has already stopped and
+ * deleted the previous handler, so an invalid visitor takes that client's whole tunnel set
+ * down until the next valid push.
+ */
+export const TypedVisitorConfigValid = (visitorCfg: TypedVisitorConfig | undefined): boolean => {
+  if (!visitorCfg) return false
+  if (!visitorCfg.name || !visitorCfg.type) return false
+  if (!visitorCfg.serverName) return false
+  // frp rejects 0; negative means "do not bind, only accept redirected connections".
+  if (!visitorCfg.bindPort) return false
+  if (visitorCfg.type === 'xtcp' && visitorCfg.protocol && !XTCPVisitorProtocols.includes(visitorCfg.protocol)) {
+    return false
+  }
+  return true
 }
 
 export const IsIDValid = (clientID: string | undefined): boolean => {

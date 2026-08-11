@@ -1,16 +1,22 @@
 import { BandwidthQuantity, HeaderOperations } from './common'
 import { TypedClientPluginOptions } from './plugin'
 
+export type BandwidthLimitMode = 'client' | 'server'
+export type ProxyProtocolVersion = 'v1' | 'v2'
+export type HealthCheckType = 'tcp' | 'http'
+
 export interface ProxyTransport {
   useEncryption?: boolean
   useCompression?: boolean
   bandwidthLimit?: BandwidthQuantity
-  bandwidthLimitMode?: string
-  proxyProtocolVersion?: string
+  bandwidthLimitMode?: BandwidthLimitMode
+  proxyProtocolVersion?: ProxyProtocolVersion
 }
 
 export interface LoadBalancerConfig {
-  group: string
+  // Optional: frp omits `group` without omitempty, so stored blobs routinely carry
+  // `{"group": ""}`. Treat the empty string as unset.
+  group?: string
   groupKey?: string
 }
 
@@ -21,11 +27,15 @@ export interface ProxyBackend {
 }
 
 export interface HealthCheckConfig {
-  type: string
+  // Optional for the same reason as LoadBalancerConfig.group: frp emits
+  // `{"type": "", "intervalSeconds": 0}` into every stored blob.
+  type?: HealthCheckType
   timeoutSeconds?: number
   maxFailed?: number
-  intervalSeconds: number
+  intervalSeconds?: number
+  // Required by frp when type is 'http'.
   path?: string
+  httpHeaders?: { name: string; value: string }[]
 }
 
 export interface DomainConfig {
@@ -78,6 +88,7 @@ export interface HTTPProxyConfig extends ProxyBaseConfig, DomainConfig {
   httpPassword?: string
   hostHeaderRewrite?: string
   requestHeaders?: HeaderOperations
+  responseHeaders?: HeaderOperations
   routeByHTTPUser?: string
 }
 
@@ -92,7 +103,8 @@ export interface TCPMuxProxyConfig extends ProxyBaseConfig, DomainConfig {
   httpUser?: string
   httpPassword?: string
   routeByHTTPUser?: string
-  multiplexer?: string
+  // frp rejects an empty multiplexer -- 'httpconnect' is the only accepted value.
+  multiplexer?: TCPMultiplexerType
 }
 
 export interface STCPProxyConfig extends ProxyBaseConfig {
@@ -105,6 +117,7 @@ export interface XTCPProxyConfig extends ProxyBaseConfig {
   type: 'xtcp'
   secretKey?: string
   allowUsers?: string[]
+  natTraversal?: { disableAssistedAddrs?: boolean }
 }
 
 export interface SUDPProxyConfig extends ProxyBaseConfig {

@@ -25,19 +25,46 @@ export function VisitPreview({ server, typedProxyConfig, direction, withIcon = t
 export function ServerSideVisitPreview({ server, typedProxyConfig, withIcon = true }: { server: Server; typedProxyConfig: TypedProxyConfig; withIcon?: boolean }) {
   const serverCfg = JSON.parse(server?.config || '{}') as ServerConfig;
   const serverAddress = server.ip || serverCfg.bindAddr || 'Unknown';
-  const serverPort = getServerPort(typedProxyConfig, serverCfg);
 
   return <div className="flex items-center mb-2 sm:mb-0">
     {withIcon && <Globe className="w-4 h-4 text-blue-500 mr-2 flex-shrink-0" />}
-    <span className="text-nowrap">{typedProxyConfig.type == "http" ? "http://" : ""}{
-      typedProxyConfig.type == "http" ? (
-        getServerAuth(typedProxyConfig as HTTPProxyConfig) + getServerHost(typedProxyConfig as HTTPProxyConfig, serverCfg, serverAddress)
-      ) : serverAddress
-    }:{serverPort || "?"}{
-        typedProxyConfig.type == "http" ?
-          getServerPath(typedProxyConfig as HTTPProxyConfig) : ""
-      }</span>
+    <span className="text-nowrap">{describeServerSide(typedProxyConfig, serverCfg, serverAddress)}</span>
   </div>
+}
+
+/**
+ * How a proxy is reached from outside. The scheme and host rules differ per type, and
+ * the secret types have no server-side address at all -- they are reached through a
+ * visitor on another client, so printing `host:?` for them is actively misleading.
+ */
+function describeServerSide(cfg: TypedProxyConfig, serverCfg: ServerConfig, serverAddress: string): string {
+  const port = getServerPort(cfg, serverCfg);
+  const portSuffix = `:${port || '?'}`;
+
+  switch (cfg.type) {
+    case 'tcp':
+    case 'udp':
+      return `${serverAddress}${portSuffix}`;
+    case 'http': {
+      const http = cfg as HTTPProxyConfig;
+      return `http://${getServerAuth(http)}${getServerHost(http, serverCfg, serverAddress)}${portSuffix}${getServerPath(http)}`;
+    }
+    case 'https':
+      return `https://${getDomainHost(cfg, serverCfg, serverAddress)}${portSuffix}`;
+    case 'tcpmux':
+      return `${getDomainHost(cfg, serverCfg, serverAddress)}${portSuffix} (${(cfg as { multiplexer?: string }).multiplexer || 'httpconnect'})`;
+    case 'stcp':
+    case 'xtcp':
+    case 'sudp':
+      return 'via visitor';
+    default:
+      return `${serverAddress}${portSuffix}`;
+  }
+}
+
+/** Domain resolution for the vhost-routed types, without http-only auth or paths. */
+function getDomainHost(cfg: TypedProxyConfig, serverCfg: ServerConfig, serverAddress: string) {
+  return getServerHost(cfg as HTTPProxyConfig, serverCfg, serverAddress);
 }
 
 export function ClientSideVisitPreview({ typedProxyConfig, withIcon = true }: { typedProxyConfig: TypedProxyConfig, withIcon?: boolean }) {
@@ -63,6 +90,8 @@ function getServerPort(proxyConfig: TypedProxyConfig, serverConfig: ServerConfig
       return serverConfig.vhostHTTPPort;
     case 'https':
       return serverConfig.vhostHTTPSPort;
+    case 'tcpmux':
+      return serverConfig.tcpmuxHTTPConnectPort;
     default:
       return undefined;
   }

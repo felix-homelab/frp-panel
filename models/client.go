@@ -43,17 +43,22 @@ func (*Client) TableName() string {
 }
 
 func (c *ClientEntity) SetConfigContent(cfg v1.ClientConfig) error {
+	// Visitors must be marshalled as the concrete VisitorConfigurer, not as a
+	// *VisitorBaseConfig downcast: the base config carries none of the XTCP-specific
+	// fields (protocol, keepTunnelOpen, maxRetriesAnHour, minRetryInterval, fallbackTo,
+	// fallbackTimeoutMs), so downcasting silently drops them on every proxy CRUD
+	// operation. This mirrors biz/master/client/update_tunnel.go.
 	newCfg := struct {
 		v1.ClientCommonConfig
 		Proxies  []v1.ProxyConfigurer   `json:"proxies,omitempty"`
-		Visitors []v1.VisitorBaseConfig `json:"visitors,omitempty"`
+		Visitors []v1.VisitorConfigurer `json:"visitors,omitempty"`
 	}{
 		ClientCommonConfig: cfg.ClientCommonConfig,
 		Proxies: lo.Map(cfg.Proxies, func(item v1.TypedProxyConfig, _ int) v1.ProxyConfigurer {
 			return item.ProxyConfigurer
 		}),
-		Visitors: lo.Map(cfg.Visitors, func(item v1.TypedVisitorConfig, _ int) v1.VisitorBaseConfig {
-			return *item.GetBaseConfig()
+		Visitors: lo.Map(cfg.Visitors, func(item v1.TypedVisitorConfig, _ int) v1.VisitorConfigurer {
+			return item.VisitorConfigurer
 		}),
 	}
 	raw, err := json.Marshal(newCfg)

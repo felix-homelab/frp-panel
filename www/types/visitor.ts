@@ -30,14 +30,19 @@ export interface SUDPVisitorConfig extends VisitorBaseConfig {
 
 export interface XTCPVisitorConfig extends VisitorBaseConfig {
   type: 'xtcp'
-  protocol?: string
+  // frp rejects anything other than 'quic' or 'kcp' after Complete() defaults it to 'quic'.
+  protocol?: 'quic' | 'kcp'
   keepTunnelOpen?: boolean
   maxRetriesAnHour?: number
   minRetryInterval?: number
+  // Names a sibling *visitor* on the same client, not a proxy -- frp hands the
+  // connection to it via TransferConn when hole-punching does not succeed in time.
+  // The idiomatic target is an stcp visitor with bindPort: -1.
   fallbackTo?: string
   fallbackTimeoutMs?: number
+  natTraversal?: XTCPNatTraversalConfig
 }
 
-export interface ClientCommonConfig {
-  user: string
+export interface XTCPNatTraversalConfig {
+  disableAssistedAddrs?: boolean
 }

@@ -21,7 +21,10 @@ export interface AuthClientConfig {
 export interface ClientTransportConfig {
   protocol?: string
   dialServerTimeout?: number
-  dialServerKeepAlive?: number
+  // frp's JSON tag is lowercase-a `dialServerKeepalive` even though the Go field is
+  // DialServerKeepAlive. The loader runs strict, so the tag spelling is the only one
+  // that decodes.
+  dialServerKeepalive?: number
   connectServerLocalIP?: string
   proxyURL?: string
   poolCount?: number
@@ -37,10 +40,16 @@ export interface ClientTransportConfig {
   wireProtocol?: 'v1' | 'v2'
 }
 
+// frp embeds TLSConfig with no JSON tag, so its fields are inlined here rather than
+// nested under a `tls` key. `transport.tls.tls.certFile` is an unknown field and the
+// strict loader rejects the whole config.
 export interface TLSClientConfig {
   enable?: boolean
   disableCustomTLSFirstByte?: boolean
-  tls?: TLSConfig
+  certFile?: string
+  keyFile?: string
+  trustedCaFile?: string
+  serverName?: string
 }
 
 export interface CompleteTLSClientConfig extends TLSClientConfig {
@@ -48,31 +57,20 @@ export interface CompleteTLSClientConfig extends TLSClientConfig {
   disableCustomTLSFirstByte: boolean
 }
 
-export interface AuthClientConfig {
-  auth?: AuthClientConfig
-  user?: string
-  serverAddr?: string
-  serverPort?: number
-  natHoleStunServer?: string
-  dnsServer?: string
-  loginFailExit?: boolean
-  start?: string[]
-  log?: LogConfig
-  webServer?: WebServerConfig
-  transport?: ClientTransportConfig
-  udpPacketSize?: number
-  metadatas?: { [key: string]: string }
-  includes?: string[]
-}
-
 export interface ClientConfig extends ClientCommonConfig {
   proxies?: TypedProxyConfig[]
   visitors?: TypedVisitorConfig[]
 }
 
-export interface ClientCommonConfig extends AuthClientConfig {
+// Mirrors frp v0.70.1 pkg/config/v1.ClientCommonConfig. Auth lives nested under `auth`
+// -- it must NOT extend AuthClientConfig, because the strict loader rejects `method`,
+// `token`, `oidc` and `additionalScopes` at the top level.
+export interface ClientCommonConfig {
   auth?: AuthClientConfig
   user?: string
+  // frp >= v0.67. Native client identity; frp-panel still uses
+  // metadatas['x-vaala-frp-client-id'] and has not migrated.
+  clientID?: string
   serverAddr: string
   serverPort: number
   natHoleStunServer?: string
@@ -82,7 +80,21 @@ export interface ClientCommonConfig extends AuthClientConfig {
   log?: LogConfig
   webServer?: WebServerConfig
   transport?: ClientTransportConfig
+  // frp >= v0.65, alpha and gated off by default. Applied process-globally by the
+  // agent (services/client/frpc_service.go), so one client's gates affect every frpc
+  // in that agent -- documented here, deliberately not exposed as a per-client field.
+  featureGates?: { [key: string]: boolean }
+  virtualNet?: VirtualNetConfig
   udpPacketSize?: number
   metadatas?: { [key: string]: string }
+  // Resolves filesystem paths on the agent host. Meaningless for frp-panel, whose
+  // model is DB-sourced config pushed to the agent.
   includes?: string[]
+  // frp >= v0.68. Agent-local persisted config source; deliberately disabled by the
+  // panel (see internal/frpx/client.go) because it would resurrect deleted proxies.
+  store?: unknown
+}
+
+export interface VirtualNetConfig {
+  address?: string
 }

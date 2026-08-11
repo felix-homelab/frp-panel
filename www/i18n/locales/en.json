@@ -548,6 +548,15 @@
     "list": {
       "placeholder": "Please enter ...",
       "add": "Add"
+    },
+    "kv": {
+      "key_placeholder": "Key",
+      "value_placeholder": "Value",
+      "add": "Add",
+      "reserved": "Managed by the panel; not editable here"
+    },
+    "select": {
+      "unset": "Not set"
     }
   },
   "traffic": {
@@ -602,7 +611,55 @@
         "title": "Node {{id}} Comment",
         "hint": "You can modify the comment in advanced mode!",
         "empty": "Nothing here"
-      }
+      },
+      "not_loaded": "Client configuration is still loading. Wait for it to finish before saving.",
+      "protocol_description": "The server port is derived from this. When an frps URL is set, its scheme wins.",
+      "tls": {
+        "enable": "Enable TLS",
+        "disable_custom_first_byte": "Disable custom TLS first byte",
+        "cert_file": "Certificate file",
+        "key_file": "Key file",
+        "trusted_ca_file": "Trusted CA file",
+        "server_name": "Server name"
+      },
+      "wire_protocol": "Wire protocol",
+      "wire_protocol_description": "v2 adds AEAD encryption to the control channel.",
+      "wire_protocol_locked": "v2 is unavailable: it requires frps v0.69 or newer, and this server’s version is not confirmed.",
+      "nat_hole_stun_server": "STUN server",
+      "nat_hole_stun_server_description": "Required for XTCP hole punching. Already defaulted by frp.",
+      "dns_server": "DNS server",
+      "proxy_url": "Outbound proxy URL",
+      "proxy_url_description": "Also picked up from the agent’s http_proxy environment variable.",
+      "connect_server_local_ip": "Local IP to connect from",
+      "pool_count": "Connection pool size",
+      "tcp_mux": "TCP multiplexing",
+      "tcp_mux_keepalive_interval": "TCP mux keepalive interval (seconds)",
+      "heartbeat_interval": "Heartbeat interval (seconds)",
+      "heartbeat_timeout": "Heartbeat timeout (seconds)",
+      "heartbeat_disabled_hint": "-1 disables it; that is the default when TCP multiplexing is on.",
+      "dial_server_timeout": "Dial timeout (seconds)",
+      "dial_server_keepalive": "Dial keepalive (seconds)",
+      "quic_keepalive_period": "QUIC keepalive period (seconds)",
+      "quic_max_idle_timeout": "QUIC max idle timeout (seconds)",
+      "quic_max_incoming_streams": "QUIC max incoming streams",
+      "web_server_redundant_hint": "The agent web server is largely redundant with this panel.",
+      "log": {
+        "to": "Log destination",
+        "level": "Log level",
+        "max_days": "Retain logs (days)",
+        "disable_print_color": "Disable coloured output"
+      },
+      "web_server": {
+        "addr": "Web server address",
+        "port": "Web server port",
+        "user": "Web server user",
+        "password": "Web server password",
+        "pprof_enable": "Enable pprof"
+      },
+      "login_fail_exit": "Exit on login failure",
+      "udp_packet_size": "UDP packet size (bytes)",
+      "metadatas": "Metadata",
+      "metadatas_description": "Greyed-out entries are the panel’s own auth keys and are preserved on save."
     },
     "plugins": {
       "local_addr": "Local Address",
@@ -616,6 +673,13 @@
       "http_user": "HTTP User",
       "http_password": "HTTP Password",
       "unix_domain_socket_path": "Unix Domain Socket Path"
+    },
+    "section": {
+      "tls": "TLS",
+      "network": "Network & NAT",
+      "tuning": "Connection Tuning",
+      "logging": "Logging & Agent Web Server",
+      "advanced": "Advanced"
     }
   },
   "proxy": {
@@ -655,13 +719,69 @@
       "enable_http_auth": "Enable HTTP Authentication",
       "username": "Username",
       "password": "Password",
-      "subdomain_placeholder": "Input Subdomain"
+      "subdomain_placeholder": "Input Subdomain",
+      "unsupported_type": {
+        "title": "No form for \"{{type}}\" proxies yet",
+        "description": "Turn on Advanced mode to edit this proxy as raw JSON."
+      },
+      "allow_users": "Allowed Users",
+      "allow_users_description": "Panel account names permitted to connect. Use * to allow any user.",
+      "visitor_required_hint": "This proxy type is not reachable directly. A visitor on another client has to connect to it.",
+      "stun_hint": "XTCP needs a reachable STUN server (natHoleStunServer) in the client configuration.",
+      "https_port_hint": "Requires vhostHTTPSPort to be set on the server, otherwise frps has no HTTPS listener.",
+      "tcpmux_port_hint": "Requires tcpmuxHTTPConnectPort to be set on the server.",
+      "multiplexer": "Multiplexer",
+      "domain_required": "Provide a subdomain or at least one custom domain",
+      "transport": {
+        "title": "Transport",
+        "use_encryption": "Encrypt traffic",
+        "use_encryption_description": "Encrypt this proxy’s traffic between client and server.",
+        "use_compression": "Compress traffic",
+        "use_compression_description": "Trades CPU for bandwidth. Helps on slow links.",
+        "bandwidth_limit": "Bandwidth limit",
+        "bandwidth_limit_mode": "Limit applied at",
+        "bandwidth_limit_mode_default": "Client (default)",
+        "proxy_protocol_version": "PROXY protocol",
+        "proxy_protocol_off": "Off",
+        "proxy_protocol_description": "Sends the original client address to your local service. Your service must understand it."
+      },
+      "health_check": {
+        "title": "Health Check",
+        "type": "Check type",
+        "off": "Disabled",
+        "path": "Request path",
+        "interval_seconds": "Interval (seconds)",
+        "timeout_seconds": "Timeout (seconds)",
+        "max_failed": "Failures before removal"
+      },
+      "load_balancer": {
+        "title": "Load Balancing",
+        "group": "Group",
+        "group_key": "Group key",
+        "managed_hint": "This proxy belongs to a worker ingress. Its group is managed by the panel."
+      },
+      "http": {
+        "title": "HTTP Options",
+        "host_header_rewrite": "Rewrite Host header",
+        "request_headers": "Request headers",
+        "route_by_http_user": "Route by HTTP user"
+      },
+      "metadata": {
+        "title": "Metadata",
+        "metadatas": "Metadata",
+        "annotations": "Annotations",
+        "reserved_hint": "Greyed-out entries are managed by the panel and are preserved on save."
+      }
     },
     "type": {
       "http": "HTTP",
       "tcp": "TCP",
       "udp": "UDP",
-      "stcp": "STCP"
+      "stcp": "STCP",
+      "https": "HTTPS",
+      "tcpmux": "TCPMUX",
+      "xtcp": "XTCP",
+      "sudp": "SUDP"
     },
     "config": {
       "create": "Create",
@@ -678,7 +798,8 @@
       "invalid_json": "Json Invalid",
       "draft": "Draft",
       "invalid_config": "Invalid configuration",
-      "submit": "Submit"
+      "submit": "Submit",
+      "single_proxy_only": "Provide exactly one proxy. The server accepts a single proxy per request."
     },
     "action": {
       "delete_success": "Delete Successful",
@@ -748,7 +869,63 @@
       "vhost_http_port": "HTTP Listen Port",
       "subdomain_host": "Subdomain Host",
       "quic_bind_port": "Quic Bind Port",
-      "kcp_bind_port": "KCP Bind Port"
+      "kcp_bind_port": "KCP Bind Port",
+      "vhost_https_port": "HTTPS Port",
+      "vhost_http_timeout": "HTTP response header timeout (seconds)",
+      "tcpmux_http_connect_port": "TCPMUX HTTP CONNECT port",
+      "tcpmux_passthrough": "TCPMUX passthrough",
+      "custom_404_page": "Custom 404 page",
+      "allow_ports": "Allowed remote ports",
+      "allow_ports_description": "Ranges clients may bind, e.g. 1000-2000, 3000. Empty allows any port.",
+      "max_ports_per_client": "Max ports per client",
+      "max_ports_per_client_description": "0 means unlimited.",
+      "user_conn_timeout": "User connection timeout (seconds)",
+      "udp_packet_size": "UDP packet size (bytes)",
+      "nathole_reserve_hours": "NAT hole analysis retention (hours)",
+      "detailed_errors_to_client": "Send detailed errors to clients",
+      "transport": {
+        "tcp_mux": "TCP multiplexing",
+        "tcp_mux_keepalive_interval": "TCP mux keepalive interval (seconds)",
+        "tcp_keepalive": "TCP keepalive (seconds)",
+        "disabled_hint": "-1 disables it.",
+        "max_pool_count": "Max pool count",
+        "heartbeat_timeout": "Heartbeat timeout (seconds)",
+        "heartbeat_timeout_description": "Defaults to -1 (disabled) when TCP multiplexing is on.",
+        "quic_keepalive_period": "QUIC keepalive period (seconds)",
+        "quic_max_idle_timeout": "QUIC max idle timeout (seconds)",
+        "quic_max_incoming_streams": "QUIC max incoming streams",
+        "tls_force": "Require TLS",
+        "tls_force_description": "Rejects any client that does not connect over TLS.",
+        "tls_cert_file": "TLS certificate file",
+        "tls_key_file": "TLS key file",
+        "tls_trusted_ca_file": "Trusted CA file",
+        "tls_server_name": "TLS server name"
+      },
+      "ssh": {
+        "paths_hint": "These paths are read on the server agent’s own filesystem.",
+        "bind_port": "SSH gateway port",
+        "private_key_file": "Private key file",
+        "auto_gen_private_key_path": "Auto-generated key path",
+        "authorized_keys_file": "Authorized keys file"
+      },
+      "web_server": {
+        "port_conflict_hint": "Must not collide with the panel agent’s own API port, or frps will fail to start.",
+        "addr": "Dashboard address",
+        "port": "Dashboard port",
+        "user": "Dashboard user",
+        "password": "Dashboard password",
+        "assets_dir": "Assets directory",
+        "pprof_enable": "Enable pprof"
+      },
+      "enable_prometheus": "Expose Prometheus metrics",
+      "enable_prometheus_description": "Serves /metrics from the frps dashboard.",
+      "enable_prometheus_needs_port": "Set a dashboard port first — /metrics is served by the frps web server.",
+      "log": {
+        "to": "Log destination",
+        "level": "Log level",
+        "max_days": "Retain logs (days)",
+        "disable_print_color": "Disable coloured output"
+      }
     },
     "create": {
       "submitting": "Creating server...",
@@ -803,7 +980,15 @@
     "status_offline": "Offline",
     "status_error": "Error",
     "status_unknown": "Unknown",
-    "status_pause": "Paused"
+    "status_pause": "Paused",
+    "section": {
+      "vhost": "Virtual Hosts",
+      "security": "Security & Limits",
+      "transport": "Transport & TLS",
+      "ssh_gateway": "SSH Tunnel Gateway",
+      "dashboard": "Dashboard & Metrics",
+      "logging": "Logging"
+    }
   },
   "auth": {
     "loggingIn": "Logging in, please wait",
@@ -1040,5 +1225,68 @@
     "save": "Save",
     "save_success": "Save successful",
     "save_error": "Save failed"
+  },
+  "validation": {
+    "number": "Must be a number",
+    "bandwidth": "Use a number followed by KB or MB, e.g. 1MB",
+    "visitorBindPort": "Must not be 0. Use -1 to accept redirected connections only",
+    "annotationKey": "Invalid annotation key",
+    "healthCheckPathRequired": "A request path is required for HTTP health checks",
+    "reservedLoadBalancerGroup": "This group name prefix is reserved by the panel",
+    "required": "This field is required",
+    "portRange": {
+      "min": "Port must be at least 1",
+      "max": "Port must be at most 65535"
+    },
+    "ipAddress": "Enter a valid IPv4 address",
+    "host": "Enter a valid host, IP address or empty value",
+    "portRangeList": "Use ports or ranges, e.g. 1000-2000, 3000"
+  },
+  "visitor": {
+    "type": {
+      "stcp": "STCP",
+      "xtcp": "XTCP",
+      "sudp": "SUDP"
+    },
+    "form": {
+      "add": "Add Visitor",
+      "name": "Visitor name",
+      "type": "Type",
+      "type_label": "Type: {{type}}",
+      "confirm": "Confirm",
+      "delete": "Delete",
+      "config": "Visitors",
+      "expand_one": "{{count}} visitor",
+      "expand_other": "{{count}} visitors",
+      "server_name": "Target proxy name",
+      "secret_key": "Secret key",
+      "bind_addr": "Local bind address",
+      "bind_port": "Local bind port",
+      "bind_port_hint": "Use -1 to accept only connections redirected from another visitor (not supported for SUDP).",
+      "use_encryption": "Encrypt traffic",
+      "use_compression": "Compress traffic",
+      "protocol": "Hole-punching protocol",
+      "protocol_default": "QUIC (default)",
+      "keep_tunnel_open": "Keep tunnel open",
+      "max_retries_an_hour": "Max retries per hour",
+      "min_retry_interval": "Min retry interval (seconds)",
+      "fallback_to": "Fall back to visitor",
+      "fallback_to_description": "Another visitor on this client, typically an STCP visitor with bind port -1. Used when hole punching does not succeed in time.",
+      "fallback_timeout_ms": "Fallback timeout (ms)",
+      "save_changes": "Save changes",
+      "unsupported_type": "No form for \"{{type}}\" visitors yet. Use Advanced mode to edit it as raw JSON."
+    },
+    "pairing": {
+      "label": "Pair with a proxy",
+      "placeholder": "Select a proxy to fill in name and secret",
+      "hint_same_server": "Only proxies of the same type on the same server can be reached.",
+      "empty": "No {{type}} proxies on this server yet. Create one first, then pair with it here."
+    },
+    "status": {
+      "create": "Add visitor",
+      "name_exists": "A visitor with that name already exists",
+      "invalid_config": "Invalid visitor configuration",
+      "staged": "Saved. Press Submit to push it to the client."
+    }
   }
 }

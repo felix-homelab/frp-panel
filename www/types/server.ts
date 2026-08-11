@@ -52,8 +52,14 @@ export interface ServerTransportConfig {
   tls?: TLSServerConfig
 }
 
+// frp embeds TLSConfig with no JSON tag, so its fields are inlined here rather than
+// nested under a `tls` key -- `transport.tls.certFile`, not `transport.tls.tls.certFile`.
 export interface TLSServerConfig {
   force?: boolean
+  certFile?: string
+  keyFile?: string
+  trustedCaFile?: string
+  serverName?: string
 }
 
 export interface SSHTunnelGateway {

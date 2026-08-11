@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next'
 import { ServerSelector } from '../base/server-selector'
 import { ClientSelector } from '../base/client-selector'
 import { TypedProxyForm } from '../frpc/proxy_form'
+import { coerceProxyConfigToType } from '../frpc/proxy_forms/shared/build'
 import { ProxyType, TypedProxyConfig } from '@/types/proxy'
 import { BaseSelector } from '../base/selector'
 import { createProxyConfig } from '@/api/proxy'
@@ -73,7 +74,7 @@ export const ProxyConfigMutateForm = ({
   const [proxyName, setProxyName] = useState<string | undefined>('')
   const [proxyType, setProxyType] = useState<ProxyType>('http')
   const [selectedServer, setSelectedServer] = useState<Server | undefined>()
-  const supportedProxyTypes: ProxyType[] = ['http', 'tcp', 'udp']
+  const supportedProxyTypes: ProxyType[] = ['http', 'https', 'tcp', 'udp', 'tcpmux', 'stcp', 'xtcp', 'sudp']
   // advanced mode toggle
   const [advancedMode, setAdvancedMode] = useState<boolean>(false)
   const [rawConfig, setRawConfig] = useState<string>('{}')
@@ -104,7 +105,10 @@ export const ProxyConfigMutateForm = ({
 
   useEffect(() => {
     if (proxyName && proxyType) {
-      setProxyConfigs([{ ...defaultProxyConfig, name: proxyName, type: proxyType }])
+      // Coerce rather than spread: keys that belong to the previous type would ride
+      // along (e.g. remotePort onto an http proxy) and the backend decodes with
+      // DisallowUnknownFields, so that is a hard rejection rather than a stray field.
+      setProxyConfigs([{ ...coerceProxyConfigToType(defaultProxyConfig, proxyType), name: proxyName }])
     }
   }, [proxyName, proxyType])
 
@@ -124,6 +128,15 @@ export const ProxyConfigMutateForm = ({
       setRawConfig(JSON.stringify([defaultProxyConfig], null, 2))
     }
   }, [defaultProxyConfig, defaultOriginalProxyConfig])
+
+  // One predicate for both the disabled state and the click guard -- they used to be
+  // written twice and had drifted, so advanced mode looked submittable and then refused.
+  // The backend accepts exactly one proxy per create call
+  // (biz/master/proxy/create_proxy_config.go), hence the length check rather than
+  // running TypedProxyConfigValid over a raw array: that validator requires
+  // localPort + localIP, which is wrong for a plugin-only or secret-type proxy and
+  // would defeat the point of advanced mode.
+  const canSubmit = advancedMode ? proxyConfigs.length === 1 : TypedProxyConfigValid(proxyConfigs[0])
 
   return (
     <>
@@ -200,10 +213,10 @@ export const ProxyConfigMutateForm = ({
         </>
       )}
       <Button
-        disabled={advancedMode ? proxyConfigs.length === 0 : !TypedProxyConfigValid(proxyConfigs[0])}
+        disabled={!canSubmit}
         onClick={() => {
-          if (!TypedProxyConfigValid(proxyConfigs[0])) {
-            toast(t('proxy.config.invalid_config'))
+          if (!canSubmit) {
+            toast(advancedMode ? t('proxy.config.single_proxy_only') : t('proxy.config.invalid_config'))
             return
           }
           createProxyConfigMutation.mutate()

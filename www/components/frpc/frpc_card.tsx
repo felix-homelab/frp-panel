@@ -11,6 +11,7 @@ import { FRPCEditor } from './frpc_editor'
 import { FRPCForm } from './frpc_form'
 import { useSearchParams } from 'next/navigation'
 import { ClientConfig } from '@/types/client'
+import { TypedVisitorConfig } from '@/types/visitor'
 import { TypedProxyConfig } from '@/types/proxy'
 import { ClientSelector } from '../base/client-selector'
 import { ServerSelector } from '../base/server-selector'
@@ -35,6 +36,7 @@ export const FRPCFormCard: React.FC<FRPCFormCardProps> = ({
   const searchParams = useSearchParams()
   const paramClientID = searchParams.get('clientID')
   const [clientProxyConfigs, setClientProxyConfigs] = useState<TypedProxyConfig[]>([])
+  const [clientVisitorConfigs, setClientVisitorConfigs] = useState<TypedVisitorConfig[]>([])
   const [frpsUrl, setFrpsUrl] = useState<string | undefined>()
   const [selectedServer, setSelectedServer] = useState<Server | undefined>(undefined)
 
@@ -58,6 +60,7 @@ export const FRPCFormCard: React.FC<FRPCFormCardProps> = ({
   useEffect(() => {
     if (error) {
       setClientProxyConfigs([])
+      setClientVisitorConfigs([])
     }
   }, [error])
 
@@ -74,6 +77,10 @@ export const FRPCFormCard: React.FC<FRPCFormCardProps> = ({
     if (clientConf != undefined && clientConf.proxies == undefined) {
       setClientProxyConfigs([])
     }
+
+    // Visitors live in the same blob as proxies; without hydrating them here the
+    // form would submit an empty list and delete them.
+    setClientVisitorConfigs(clientConf.visitors ?? [])
 
     if (client?.client?.frpsUrl) {
       setFrpsUrl(client?.client?.frpsUrl)
@@ -133,6 +140,8 @@ export const FRPCFormCard: React.FC<FRPCFormCardProps> = ({
           clientID={clientID} serverID={serverID}
           clientProxyConfigs={clientProxyConfigs}
           setClientProxyConfigs={setClientProxyConfigs}
+          clientVisitorConfigs={clientVisitorConfigs}
+          setClientVisitorConfigs={setClientVisitorConfigs}
           frpsUrl={frpsUrl}
         />
         }

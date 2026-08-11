@@ -7,6 +7,7 @@ import (
 	"github.com/VaalaCat/frp-panel/common"
 	"github.com/VaalaCat/frp-panel/conf"
 	"github.com/VaalaCat/frp-panel/defs"
+	"github.com/VaalaCat/frp-panel/internal/frpx"
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/services/app"
 	"github.com/VaalaCat/frp-panel/services/dao"
@@ -42,7 +43,18 @@ func UpdateFrpsHander(c *app.Context, req *pb.UpdateFRPSRequest) (*pb.UpdateFRPS
 		return nil, err
 	}
 
-	lo.Filter(srvCfg.HTTPPlugins, func(item v1.HTTPPluginOptions, _ int) bool {
+	// Decoding only proves the shape is right. A config that decodes but fails frp's
+	// validation (a bad log level, an unsupported httpPlugins op) is accepted here and
+	// then panics the Server agent when it tries to build frps, so validate before the
+	// config is ever stored or pushed.
+	if warning, err := frpx.ValidateServerConfig(srvCfg); err != nil {
+		logger.Logger(c).WithError(err).Errorf("invalid server config")
+		return nil, err
+	} else if warning != nil {
+		logger.Logger(c).Warnf("server config warning: %v", warning)
+	}
+
+	srvCfg.HTTPPlugins = lo.Filter(srvCfg.HTTPPlugins, func(item v1.HTTPPluginOptions, _ int) bool {
 		return item.Name != defs.FRP_Plugin_Multiuser
 	})
 	srvCfg.HTTPPlugins = append(srvCfg.HTTPPlugins, conf.FRPsAuthOption(c.GetApp().GetConfig()))
