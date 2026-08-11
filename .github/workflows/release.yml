@@ -1,0 +1,92 @@
+# Fork-local release.
+#
+# Like fork-checks.yml, this is a NEW file rather than an edit to tag.workflow.yml on
+# purpose: this repository is a fork, and a new file can never produce a rebase conflict
+# against upstream, whereas editing the shared workflow would conflict on every upstream
+# change. The upstream tag workflows are disabled repo-side (Actions -> Workflows ->
+# Disable) so the two do not race for the same release.
+#
+# It differs from upstream's tag.workflow.yml in exactly two ways:
+#
+#   1. `permissions: contents: write`. This repo's default GITHUB_TOKEN permission is
+#      read-only, which is why upstream's workflow died with "Resource not accessible by
+#      integration" on v0.10.0 -- a read-only token cannot create a release or upload
+#      assets. An explicit permissions block overrides the repo default, so this works
+#      without depending on a repo setting that a re-fork or a settings reset would lose.
+#
+#   2. No `ko` / Docker Hub push. Those steps need DOCKERHUB_USERNAME and DOCKERHUB_TOKEN,
+#      which are not set here, and they are hardcoded to docker.io/vaalacat/frp-panel --
+#      upstream's namespace, not ours.
+#
+# The build steps below are copied verbatim from upstream's tag.workflow.yml. They are
+# known-green on this fork as of v0.10.0 (that run reached the release step before
+# failing), so they are deliberately not "cleaned up" -- notably the redundant-looking
+# `npm install` before pnpm, which the frontend build in build.sh relies on in practice.
+name: fork release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: npm setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.25.x"
+
+      - name: npm install and build
+        run: |
+          cd www
+          npm install && npm install -g pnpm
+
+      # build.sh stamps conf.gitVersion from GITHUB_REF_NAME when it is set (build.sh:24),
+      # so the `version` subcommand reports the tag rather than `git describe` output.
+      - name: Compile server
+        run: bash ./build.sh
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: dist/*
+          generate_release_notes: true
+          # dist/ silently empty would publish a release with no binaries -- the exact
+          # failure this workflow exists to prevent.
+          fail_on_unmatched_files: true
+
+      # install.sh downloads from the `latest` release tag by name, so upstream keeps a
+      # rolling `latest` release alongside the versioned one. Preserved here.
+      - name: Refresh rolling `latest` release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git tag -f latest "${GITHUB_SHA}"
+          git push -f origin latest
+          if gh release view latest >/dev/null 2>&1; then
+            gh release edit latest --target "${GITHUB_SHA}" \
+              --notes "Rolling build of ${GITHUB_REF_NAME}."
+          else
+            gh release create latest --target "${GITHUB_SHA}" --title latest \
+              --notes "Rolling build of ${GITHUB_REF_NAME}."
+          fi
+          gh release upload latest dist/* --clobber
