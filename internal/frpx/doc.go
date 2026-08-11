@@ -37,8 +37,11 @@
 //
 // # Currently pinned
 //
-//	github.com/fatedier/frp   v0.65.0
-//	github.com/fatedier/golib v0.5.1
+//	github.com/fatedier/frp   v0.70.1
+//	github.com/fatedier/golib v0.8.1
+//
+// frp v0.70.1 requires Go 1.25. Raising the go directive also means bumping the four
+// upstream workflows that hardcode go-version; fork-checks.yml tracks go.mod itself.
 //
 // # Upgrade checklist
 //
@@ -46,14 +49,17 @@
 // then run `go test -tags integration ./internal/frpx/...`.
 //
 //	client.Service                      client.go
-//	client.ServiceOptions               client.go   <- restructured in v0.68
+//	client.ServiceOptions               client.go
 //	client.NewService                   client.go
 //	client.Service.Run/Close            client.go
 //	client.Service.GracefulClose        client.go
 //	client.Service.StatusExporter       client.go
 //	client.Service.UpdateAllConfigurer  client.go
 //	client/proxy.WorkingStatus          client.go
-//	pkg/featuregate.SetFromMap          client.go   <- moved to pkg/policy/featuregate in v0.68
+//	pkg/config/source.NewConfigSource   client.go
+//	pkg/config/source.ConfigSource.ReplaceAll  client.go
+//	pkg/config/source.NewAggregator     client.go
+//	pkg/policy/featuregate.SetFromMap   client.go
 //	pkg/config/v1/validation            client.go, server.go
 //	server.Service                      server.go
 //	server.NewService                   server.go
@@ -64,12 +70,29 @@
 //	pkg/config.Values/GetValues         config.go
 //	pkg/config.RenderWithTemplate       config.go
 //	pkg/config.LoadConfigure            config.go
-//	v1.ProxyConfigurer.Complete         config.go   <- lost its argument in v0.68
-//	v1.VisitorConfigurer.Complete       config.go   <- lost its argument in v0.68
+//	v1.ProxyConfigurer.Complete         config.go
+//	v1.VisitorConfigurer.Complete       config.go
 //	pkg/plugin/server.Request/Response  plugin.go
 //	pkg/plugin/server.LoginContent      plugin.go
 //	pkg/msg.NewProxy                    msg.go
 //	pkg/util/log.Logger                 log.go
+//
+// Things that moved in v0.68 and are now settled here, recorded so the next bump is not
+// re-diagnosed from scratch:
+//
+//   - client.ServiceOptions dropped ProxyCfgs/VisitorCfgs for a mandatory
+//     ConfigSourceAggregator. NewClientService builds one from a config source alone; the
+//     store source stays unset on purpose (it would resurrect master-deleted proxies).
+//   - pkg/featuregate moved to pkg/policy/featuregate. SetFromMap itself is unchanged.
+//   - ProxyConfigurer.Complete and VisitorConfigurer.Complete lost their arguments.
+//     CompleteProxy/CompleteVisitor keep theirs so utils.LoadClientConfig never moved.
+//   - validation.ValidateServerConfig became a method on validation.ConfigValidator, and
+//     ValidateAllClientConfig gained a *security.UnsafeFeatures parameter. Both are passed
+//     nil here: frp's only unsafe feature is TokenSourceExec, which frp-panel does not use,
+//     and UnsafeFeatures.IsEnabled is nil-receiver safe.
+//
+// Not a symbol, but it breaks builds: frp drags quic-go forward, and imroc/req/v3 compiles
+// against quic-go's internals. Bumping frp usually means bumping req in the same commit.
 //
 // Proxy naming (naming.go) is a behavioral contract rather than a symbol: through frp
 // v0.67 the "{user}." prefix was applied to config during Complete(); from v0.68 the

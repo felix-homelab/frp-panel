@@ -2,21 +2,32 @@ import { HeaderOperations } from './common'
 
 export type ClientPluginType =
   | 'http_proxy'
+  | 'http2http'
   | 'http2https'
   | 'https2http'
   | 'https2https'
   | 'socks5'
   | 'static_file'
+  | 'tls2raw'
   | 'unix_domain_socket'
 
 export type TypedClientPluginOptions =
+| HTTP2HTTPPluginOptions
 | HTTP2HTTPSPluginOptions
 | HTTPProxyPluginOptions
 | HTTPS2HTTPPluginOptions
 | HTTPS2HTTPSPluginOptions
 | Socks5PluginOptions
 | StaticFilePluginOptions
+| TLS2RawPluginOptions
 | UnixDomainSocketPluginOptions
+
+export interface HTTP2HTTPPluginOptions {
+  type: 'http2http'
+  localAddr?: string
+  hostHeaderRewrite?: string
+  requestHeaders?: HeaderOperations
+}
 
 export interface HTTP2HTTPSPluginOptions {
   type: 'http2https'
@@ -61,6 +72,13 @@ export interface StaticFilePluginOptions {
   stripPrefix?: string
   httpUser?: string
   httpPassword?: string
+}
+
+export interface TLS2RawPluginOptions {
+  type: 'tls2raw'
+  localAddr?: string
+  crtPath?: string
+  keyPath?: string
 }
 
 export interface UnixDomainSocketPluginOptions {

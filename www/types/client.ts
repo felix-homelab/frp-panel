@@ -31,6 +31,10 @@ export interface ClientTransportConfig {
   heartbeatInterval?: number
   heartbeatTimeout?: number
   tls?: TLSClientConfig
+  // frp >= v0.69. Selects the frpc/frps internal wire protocol; defaults to 'v1'.
+  // Leave unset unless every frps in the fleet has been upgraded first -- a 'v2' frpc
+  // cannot connect to an frps that predates v0.69.
+  wireProtocol?: 'v1' | 'v2'
 }
 
 export interface TLSClientConfig {

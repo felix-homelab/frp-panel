@@ -28,17 +28,20 @@ func DecodeConfig(content []byte, out any, strict bool) error {
 
 // CompleteProxy applies frp's defaults to a proxy config.
 //
-// The global config is passed even though frp >= v0.68 no longer needs it: through
-// v0.67 Complete took the user name in order to rewrite Name to "{user}.{name}", and
-// from v0.68 it takes nothing because user-prefixing moved to the wire layer. Keeping
-// the parameter here means utils.LoadClientConfig never has to change again.
-func CompleteProxy(c v1.ProxyConfigurer, g *v1.ClientCommonConfig) {
-	c.Complete(g.User)
+// The global config is still accepted but no longer used: through v0.67 Complete took
+// the user name in order to rewrite Name to "{user}.{name}", and from v0.68 it takes
+// nothing because user-prefixing moved to the wire layer. Keeping the parameter means
+// utils.LoadClientConfig did not have to change when frp did.
+//
+// Completing twice is harmless now that Name is no longer rewritten, which matters
+// because client.NewService completes every configurer again internally.
+func CompleteProxy(c v1.ProxyConfigurer, _ *v1.ClientCommonConfig) {
+	c.Complete()
 }
 
 // CompleteVisitor applies frp's defaults to a visitor config.
 //
 // See CompleteProxy for why the global config is still a parameter.
-func CompleteVisitor(c v1.VisitorConfigurer, g *v1.ClientCommonConfig) {
-	c.Complete(g)
+func CompleteVisitor(c v1.VisitorConfigurer, _ *v1.ClientCommonConfig) {
+	c.Complete()
 }

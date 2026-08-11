@@ -638,6 +638,7 @@
       "local_port": "本地端口",
       "local_ip": "本地IP",
       "remote_port": "遠程端口",
+      "enabled": "啟用",
       "use_plugin": "使用插件",
       "save_changes": "暫存修改",
       "secret_key": "密鑰",

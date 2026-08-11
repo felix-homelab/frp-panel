@@ -648,6 +648,7 @@
       "local_port": "Port Local",
       "local_ip": "IP Locale",
       "remote_port": "Port Distant",
+      "enabled": "Activé",
       "use_plugin": "Utiliser un Plugin",
       "save_changes": "Enregistrer les Modifications",
       "secret_key": "Clé Secrète",

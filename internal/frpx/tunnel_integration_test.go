@@ -237,10 +237,12 @@ func TestTunnelMatrix(t *testing.T) {
 	// client-side status map was keyed by the prefixed name. frp >= v0.68 keeps the raw
 	// name in config and applies the prefix only on the wire.
 	//
-	// The wire name is identical in both, which is why the server-side assertion below is
-	// version-independent while the client-side one is not. When this subtest fails after
-	// an frp bump, that IS the finding -- flip the expectation and fix the lookups that
-	// depend on it (biz/client/get_proxy_info.go).
+	// This repo crossed that boundary at frp v0.70.1; the expectations below are the
+	// post-v0.68 ones. The wire name is identical in both generations, which is why the
+	// server-side assertion is version-independent while the client-side one is not. If
+	// this subtest fails after a future frp bump, that IS the finding -- flip the
+	// expectation and fix the lookups that depend on it (biz/client/get_proxy_info.go,
+	// which resolves both forms via frpx.RawProxyName / frpx.WireProxyName).
 	t.Run("proxy name correlation", func(t *testing.T) {
 		raw := "tcp-test"
 		wire := frpx.WireProxyName(testUser, raw)
@@ -249,15 +251,16 @@ func TestTunnelMatrix(t *testing.T) {
 		_, wireOK := cli.GetProxyStatus(wire)
 		t.Logf("client-side status lookup: raw(%q)=%v wire(%q)=%v", raw, rawOK, wire, wireOK)
 
-		// frp v0.65.0 semantics: the client keys proxies by the PREFIXED name.
-		if rawOK {
-			t.Errorf("client-side lookup by raw name %q succeeded; "+
-				"frp <= v0.67 should key by the prefixed name. "+
-				"If you just bumped frp to >= v0.68 this is the expected behavior change: "+
-				"update this assertion and make biz/client/get_proxy_info.go tolerant of both forms.", raw)
+		// frp >= v0.68 semantics: the client keys proxies by the RAW config name.
+		if !rawOK {
+			t.Errorf("client-side lookup by raw name %q failed; "+
+				"frp >= v0.68 should key by the raw config name.", raw)
 		}
-		if !wireOK {
-			t.Errorf("client-side lookup by wire name %q failed; expected it to succeed on frp <= v0.67", wire)
+		if wireOK {
+			t.Errorf("client-side lookup by wire name %q succeeded; "+
+				"frp >= v0.68 should no longer key by the prefixed name. "+
+				"If frp reverted to prefixing during Complete(), update this assertion "+
+				"and re-check biz/client/get_proxy_info.go.", wire)
 		}
 
 		// Version-independent: frps always sees the prefixed name.

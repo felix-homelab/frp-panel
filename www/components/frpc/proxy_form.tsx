@@ -47,6 +47,15 @@ export const STCPConfigSchema = z.object({
   secretKey: ZodStringSchema.optional(),
 })
 
+// frp's `enabled` (>= v0.66) is tri-state: absent or true means enabled, and only an
+// explicit false disables the entry. Write `false` alone and leave the key off otherwise
+// -- serializing `true` is redundant, and defaulting the field to `false` anywhere in the
+// form would silently disable every proxy it touches.
+//
+// Note this is frp-level and independent of the panel's own ProxyConfig.Stopped flag,
+// which is what the proxy list's start/stop action drives.
+const enabledToConfigValue = (enabled: boolean): false | undefined => (enabled ? undefined : false)
+
 export interface ProxyFormProps {
   clientID: string
   serverID: string
@@ -143,12 +152,15 @@ export const TCPProxyForm: React.FC<ProxyFormProps> = ({
   const [usePlugin, setUsePlugin] = useState<boolean>(
     (defaultConfig.plugin && defaultConfig.plugin.type.length > 0) || false,
   )
+  const [enabled, setEnabled] = useState<boolean>(defaultConfig.enabled !== false)
+
   const [pluginConfig, setPluginConfig] = useState<TypedClientPluginOptions | undefined>(defaultConfig.plugin)
 
   const onSubmit = async (values: z.infer<typeof TCPConfigSchema>) => {
     const cfgToSubmit = {
       ...defaultConfig,
       ...values,
+      enabled: enabledToConfigValue(enabled),
       plugin: usePlugin ? pluginConfig : undefined,
       type: 'tcp',
       name: proxyName,
@@ -214,6 +226,12 @@ export const TCPProxyForm: React.FC<ProxyFormProps> = ({
           placeholder="4321"
         />
         <SwitchWithLabel
+          name="enabled"
+          label={t('proxy.form.enabled')}
+          defaultValue={enabled}
+          setValue={setEnabled}
+        />
+        <SwitchWithLabel
           name="usePlugin"
           label={t('proxy.form.use_plugin')}
           defaultValue={usePlugin}
@@ -260,12 +278,15 @@ export const STCPProxyForm: React.FC<ProxyFormProps> = ({
     (defaultConfig.plugin && defaultConfig.plugin.type.length > 0) || false,
   )
 
+  const [enabled, setEnabled] = useState<boolean>(defaultConfig.enabled !== false)
+
   const [pluginConfig, setPluginConfig] = useState<TypedClientPluginOptions | undefined>(defaultConfig.plugin)
 
   const onSubmit = async (values: z.infer<typeof STCPConfigSchema>) => {
     const cfgToSubmit = {
       ...defaultConfig,
       ...values,
+      enabled: enabledToConfigValue(enabled),
       plugin: usePlugin ? pluginConfig : undefined,
       type: 'stcp',
       name: proxyName,
@@ -305,6 +326,12 @@ export const STCPProxyForm: React.FC<ProxyFormProps> = ({
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-0.5">
         <PortField name="localPort" control={form.control} label={t('proxy.form.local_port') + '*'} />
         <HostField name="localIP" control={form.control} label={t('proxy.form.local_ip') + '*'} />
+        <SwitchWithLabel
+          name="enabled"
+          defaultValue={enabled}
+          setValue={setEnabled}
+          label={t('proxy.form.enabled')}
+        />
         <SwitchWithLabel
           name="usePlugin"
           defaultValue={usePlugin}
@@ -353,12 +380,15 @@ export const UDPProxyForm: React.FC<ProxyFormProps> = ({
     (defaultConfig.plugin && defaultConfig.plugin.type.length > 0) || false,
   )
 
+  const [enabled, setEnabled] = useState<boolean>(defaultConfig.enabled !== false)
+
   const [pluginConfig, setPluginConfig] = useState<TypedClientPluginOptions | undefined>(defaultConfig.plugin)
 
   const onSubmit = async (values: z.infer<typeof UDPConfigSchema>) => {
     const cfgToSubmit = {
       ...defaultConfig,
       ...values,
+      enabled: enabledToConfigValue(enabled),
       plugin: usePlugin ? pluginConfig : undefined,
       type: 'udp',
       name: proxyName,
@@ -419,6 +449,12 @@ export const UDPProxyForm: React.FC<ProxyFormProps> = ({
         <HostField name="localIP" control={form.control} label={t('proxy.form.local_ip') + '*'} />
         <PortField name="remotePort" control={form.control} label={t('proxy.form.remote_port') + '*'} />
         <SwitchWithLabel
+          name="enabled"
+          defaultValue={enabled}
+          setValue={setEnabled}
+          label={t('proxy.form.enabled')}
+        />
+        <SwitchWithLabel
           name="usePlugin"
           defaultValue={usePlugin}
           setValue={(value) => {
@@ -472,12 +508,15 @@ export const HTTPProxyForm: React.FC<ProxyFormProps> = ({
     (defaultConfig.plugin && defaultConfig.plugin.type.length > 0) || false,
   )
 
+  const [enabled, setEnabled] = useState<boolean>(defaultConfig.enabled !== false)
+
   const [pluginConfig, setPluginConfig] = useState<TypedClientPluginOptions | undefined>(defaultConfig.plugin)
 
   const onSubmit = async (values: z.infer<typeof HTTPConfigSchema>) => {
     const cfgToSubmit = {
       ...defaultConfig,
       ...values,
+      enabled: enabledToConfigValue(enabled),
       plugin: usePlugin ? pluginConfig : undefined,
       type: 'http',
       name: proxyName,
@@ -562,6 +601,12 @@ export const HTTPProxyForm: React.FC<ProxyFormProps> = ({
           placeholder={'your.example.com'}
         />
         <FormDescription>{t('proxy.form.domain_description')}</FormDescription>
+        <SwitchWithLabel
+          name="enabled"
+          defaultValue={enabled}
+          setValue={setEnabled}
+          label={t('proxy.form.enabled')}
+        />
         <SwitchWithLabel
           name="usePlugin"
           defaultValue={usePlugin}

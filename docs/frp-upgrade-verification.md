@@ -30,7 +30,7 @@ NAT hole punching is unreliable on loopback — verify it manually (§3) or atte
 ### The assertion that is supposed to fail
 
 The `proxy name correlation` subtest pins how proxy names flow. It is the intended tripwire
-for an frp bump, and it fails **by design** when crossing frp v0.68:
+for an frp bump, and it failed **by design** when this repo crossed frp v0.68:
 
 |                              | frp ≤ v0.67 | frp ≥ v0.68 |
 |------------------------------|-------------|-------------|
@@ -42,11 +42,33 @@ for an frp bump, and it fails **by design** when crossing frp v0.68:
 The **wire name is unchanged**, which is why tunnels keep interoperating across the gap.
 What moves is the key frp-panel must use for a *client-side* status lookup.
 
-If that subtest fails and nothing else does, the upgrade is behaving as expected. Update
-the assertion, then make sure `biz/client/get_proxy_info.go` tolerates both name forms
-(`frpx.RawProxyName` / `frpx.WireProxyName`). The visible symptom of getting this wrong is
-every proxy showing **`error`** in the panel's status column — `biz/master/proxy/get_proxy_config.go`
-sets that whenever the client RPC misses.
+**Status: crossed at frp v0.70.1.** The v0.65.0 → v0.70.1 bump confirmed the table above
+empirically — the subtest now logs `raw("tcp-test")=true wire("alice.tcp-test")=false`
+while frps still reports `alice.tcp-test`. Two things were done in response, and both
+remain the current state:
+
+- The subtest's client-side expectations were inverted to the frp ≥ v0.68 semantics.
+- `biz/client/get_proxy_info.go` gained `lookupProxyStatus`, which tries the name as sent
+  and then both `frpx.RawProxyName` and `frpx.WireProxyName`. The master still sends the
+  *wire* name (`biz/master/proxy/get_proxy_config.go`), so the agent — not the master — is
+  what absorbs the difference, which keeps mixed-version fleets working during a rollout.
+
+If this subtest fails again on a future bump, that is the finding: flip the assertion and
+re-check that lookup. The visible symptom of getting it wrong is every proxy showing
+**`error`** in the panel's status column — `biz/master/proxy/get_proxy_config.go` sets that
+whenever the client RPC misses.
+
+### Collateral: the Go floor and quic-go
+
+frp v0.70.1 requires **Go 1.25**. Bumping `go.mod` past a Go release means the four
+upstream workflows that hardcode `go-version` (`master`, `tag`, `master-merge-check`,
+`workerd-docker-tag`) need the same bump; `fork-checks.yml` reads `go-version-file: go.mod`
+and follows automatically.
+
+frp also drags `quic-go` forward, and `github.com/imroc/req/v3` compiles against quic-go's
+internal HTTP/3 surface. frp v0.70.1 pulled quic-go v0.60.0, which broke `req v3.55.0`
+(`undefined: quic.ConnectionTracingID`). The fix is to move `req` in the same commit —
+v3.60.0 resolves it. **Expect to bump `req` whenever frp bumps quic-go.**
 
 ## 2. Build gate
 
@@ -118,7 +140,9 @@ means editing the client's raw config:
 ## 4. Rollout order
 
 frp v0.69 introduced a formal compatibility policy: each minor is supported until nine
-newer minors exist, and **frps should be upgraded before frpc**.
+newer minors exist, and **frps should be upgraded before frpc**. At the current pin
+(v0.70.1) that window runs to v0.79.0, so a v0.70 frpc and an frps anywhere from v0.61
+upward interoperate — mixed-version fleets are safe for the duration of a rollout.
 
 For frp-panel, where Master, Server and Client are the same binary deployed as separate
 long-lived processes:
@@ -139,7 +163,16 @@ upgrade is cosmetically harmless rather than status-breaking.
 
 - **`transport.wireProtocol` must stay `v1`.** A v2 frpc **cannot connect to an older
   frps**, and this project upgrades frps and frpc independently. frp's default is still
-  `v1`; do not expose the knob in the UI without a server-version check.
+  `v1` (`ClientTransportConfig.Complete()` fills it in), and the field is typed in
+  `www/types/client.ts` for raw-config editing only — do **not** surface it as a UI control
+  without a server-version check.
+- **`enabled` is tri-state.** frp models `ProxyBaseConfig.Enabled` / `VisitorBaseConfig.Enabled`
+  as `*bool` with `omitempty`: absent or `true` means enabled, and only an explicit `false`
+  disables. Anything that writes these configs must omit the key rather than default it to
+  `false`, or it will silently disable every proxy it touches. The proxy form routes this
+  through `enabledToConfigValue` in `www/components/frpc/proxy_form.tsx`. Note this is
+  distinct from the panel's own `ProxyConfig.Stopped`, which is what the list's start/stop
+  action drives — the two can disagree.
 - **Do not adopt frpc's `[store]` config source.** frp's aggregator merges the store with
   the pushed config, so a persisted store would resurrect proxies the Master deleted.
 - **Watch for restart loops.** `biz/server/rpc_pull_config.go`, `biz/server/update_tunnel.go`

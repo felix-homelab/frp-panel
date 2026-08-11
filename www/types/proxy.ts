@@ -36,6 +36,9 @@ export interface DomainConfig {
 export interface ProxyBaseConfig {
   name: string
   type: string
+  // frp >= v0.66. Omitted or true means enabled; only an explicit false disables the
+  // proxy. Never serialize `false` as a default -- that would disable every proxy.
+  enabled?: boolean
   transport?: ProxyTransport
   metadatas?: { [key: string]: string }
   annotations?: { [key: string]: string }

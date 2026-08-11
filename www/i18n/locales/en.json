@@ -643,6 +643,7 @@
       "local_port": "Local Port",
       "local_ip": "Local IP",
       "remote_port": "Remote Port",
+      "enabled": "Enabled",
       "use_plugin": "Use Plugin",
       "save_changes": "Save Changes",
       "secret_key": "Secret Key",

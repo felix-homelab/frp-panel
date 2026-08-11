@@ -28,9 +28,11 @@ func NewServerService(cfg *v1.ServerConfig) (*ServerService, error) {
 // ValidateServerConfig validates an frps config. The first return is a non-fatal
 // warning; the second is a fatal error.
 //
-// frp moved this from a package function to a method on a validator type in v0.68.
+// frp moved this from a package function to a method on a validator type in v0.68. The
+// nil unsafe-feature set means no opt-in unsafe feature is permitted; see
+// ValidateClientConfig in client.go for why that is the right default here.
 func ValidateServerConfig(cfg *v1.ServerConfig) (error, error) {
-	warning, err := validation.ValidateServerConfig(cfg)
+	warning, err := validation.NewConfigValidator(nil).ValidateServerConfig(cfg)
 	return warning, err
 }
 

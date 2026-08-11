@@ -6,6 +6,8 @@ export interface VisitorTransport {
 export interface VisitorBaseConfig {
   name: string
   type: string
+  // frp >= v0.66. See ProxyBaseConfig.enabled -- omitted or true means enabled.
+  enabled?: boolean
   transport?: VisitorTransport
   secretKey?: string
   serverUser?: string

@@ -6,31 +6,37 @@ import {
   TypedClientPluginOptions,
   ClientPluginType,
   HTTPProxyPluginOptions,
+  HTTP2HTTPPluginOptions,
   HTTP2HTTPSPluginOptions,
   HTTPS2HTTPPluginOptions,
   HTTPS2HTTPSPluginOptions,
   Socks5PluginOptions,
   StaticFilePluginOptions,
+  TLS2RawPluginOptions,
   UnixDomainSocketPluginOptions,
 } from '@/types/plugin'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { HTTPProxyPluginForm } from './plugins/http_proxy_plugin_form'
+import { HTTP2HTTPPluginForm } from './plugins/http_2_http_plugin_form'
 import { HTTP2HTTPSPluginForm } from './plugins/http_2_https_plugin_form'
 import { HTTPS2HTTPPluginForm } from './plugins/https_2_http_plugin_form'
 import { HTTPS2HTTPSPluginForm } from './plugins/https_2_https_plugin_form'
 import { Socks5PluginForm } from './plugins/socks5_plugin_form'
 import { StaticFilePluginForm } from './plugins/static_file_plugin_form'
+import { TLS2RawPluginForm } from './plugins/tls_2_raw_plugin_form'
 import { UnixDomainSocketPluginForm } from './plugins/unix_domain_socket_plugin_form'
 import { useTranslation } from 'react-i18next'
 
 const pluginTypeMap: Record<string, string> = {
   http_proxy: 'HTTP Proxy',
+  http2http: 'HTTP→HTTP',
   http2https: 'HTTP→HTTPS',
   https2http: 'HTTPS→HTTP',
   https2https: 'HTTPS→HTTPS',
   socks5: 'SOCKS5',
   static_file: 'Static File',
+  tls2raw: 'TLS→Raw',
   unix_domain_socket: 'Unix Domain Socket',
 }
 
@@ -85,6 +91,9 @@ export function PluginConfigForm({ defaultPluginConfig, setPluginConfig, support
           {config.type === 'http_proxy' && (
             <HTTPProxyPluginForm config={config as HTTPProxyPluginOptions} setConfig={(c) => updateConfig(c)} />
           )}
+          {config.type === 'http2http' && (
+            <HTTP2HTTPPluginForm config={config as HTTP2HTTPPluginOptions} setConfig={(c) => updateConfig(c)} />
+          )}
           {config.type === 'http2https' && (
             <HTTP2HTTPSPluginForm config={config as HTTP2HTTPSPluginOptions} setConfig={(c) => updateConfig(c)} />
           )}
@@ -99,6 +108,9 @@ export function PluginConfigForm({ defaultPluginConfig, setPluginConfig, support
           )}
           {config.type === 'static_file' && (
             <StaticFilePluginForm config={config as StaticFilePluginOptions} setConfig={(c) => updateConfig(c)} />
+          )}
+          {config.type === 'tls2raw' && (
+            <TLS2RawPluginForm config={config as TLS2RawPluginOptions} setConfig={(c) => updateConfig(c)} />
           )}
           {config.type === 'unix_domain_socket' && (
             <UnixDomainSocketPluginForm
