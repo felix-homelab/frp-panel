@@ -15,13 +15,19 @@ the repository that exercises a tunnel.
 ```bash
 mkdir -p cmd/frpp/out && touch cmd/frpp/out/.gitkeep   # satisfies //go:embed all:out
 go build ./...
-go test ./conf/... ./models/... ./services/wg/... ./utils/... ./internal/...
+go test ./conf/... ./models/... ./services/wg/... ./services/dao/... ./utils/... ./internal/... ./biz/...
 go test -tags integration -run TestTunnelMatrix -v -timeout 5m ./internal/frpx/...
 ```
 
+Also re-check `internal/frpx/version.go`: `minWireProtocolV2` and any other frp version
+gates there are statements about frp releases, and agents now report `frpx.Version()` to
+the master.
+
 Covers **tcp, udp, http, https, stcp, sudp, tcpmux**. `xtcp` is skipped by default because
 NAT hole punching is unreliable on loopback — verify it manually (§3) or attempt it with
-`FRPX_TEST_XTCP=1`.
+`FRPX_TEST_XTCP=1`. The last subtest switches a proxy to `enabled: false` on the running
+client and back, which guards `frpx.UpdateClientConfigurers` (BUG-12): frp only applies
+`enabled` by itself when a client service is created.
 
 > `go test ./...` is **not** a valid gate. `services/workerd.TestRunWorker` hardcodes
 > `/home/coder/...` paths and fails everywhere except the original author's dev container.
@@ -82,10 +88,9 @@ cd www && pnpm lint      # the only linter CI runs
 The Go test proves the frp layer. It does not prove frp-panel's HTTP API, the database
 round-trip, or the UI.
 
-Note that **`https`, `tcpmux`, `xtcp` and `sudp` have no form in the UI** — the proxy form
-dispatcher only renders `tcp`, `udp`, `http` and `stcp`, so these types must be created
-through the raw-JSON **Advanced** editor or the API. (Tracked as `BUG-03` / `PT-01`…`PT-04`
-in [`FEATURE-MATRIX.md`](../FEATURE-MATRIX.md).)
+All eight proxy types have a form (since v0.10.1). The payloads below are for the
+raw-JSON **Advanced** editor anyway: pasting the same payload every time is faster and
+more repeatable than clicking through eight forms, and it exercises the strict decoder.
 
 Bring up a Master, register a Server and a Client, then for each type below paste the
 payload into the proxy **Advanced** editor and confirm the result.
@@ -104,12 +109,12 @@ payload into the proxy **Advanced** editor and confirm the result.
 { "name": "t-http", "type": "http", "localIP": "127.0.0.1", "localPort": 8080,
   "customDomains": ["http.example.com"] }
 
-// https — needs frps vhostHTTPSPort (not settable in the UI: FS-01)
+// https — needs frps vhostHTTPSPort (server form, "HTTPS virtual host port")
 { "name": "t-https", "type": "https", "customDomains": ["https.example.com"],
   "plugin": { "type": "https2http", "localAddr": "127.0.0.1:8080",
               "crtPath": "/etc/frpp/tls.crt", "keyPath": "/etc/frpp/tls.key" } }
 
-// tcpmux — needs frps tcpmuxHTTPConnectPort (not settable in the UI: FS-07)
+// tcpmux — needs frps tcpmuxHTTPConnectPort (server form, virtual host section)
 { "name": "t-mux", "type": "tcpmux", "multiplexer": "httpconnect",
   "customDomains": ["mux.example.com"], "localIP": "127.0.0.1", "localPort": 22 }
 
@@ -122,8 +127,8 @@ payload into the proxy **Advanced** editor and confirm the result.
   "localIP": "127.0.0.1", "localPort": 22 }
 ```
 
-Visitors have **no UI at all** (§6 of the feature matrix), so stcp/sudp/xtcp verification
-means editing the client's raw config:
+Create the visitor on the consuming client — from the client card's visitor section, or in
+its raw config:
 
 ```jsonc
 "visitors": [
@@ -132,10 +137,10 @@ means editing the client's raw config:
 ]
 ```
 
-> ⚠ Adding a visitor by hand then touching **any** proxy on that client will silently strip
-> every xtcp-specific visitor field (`protocol`, `keepTunnelOpen`, `fallbackTo`, …). That is
-> `BUG-01`, pre-existing and independent of any upgrade — but it will confuse an xtcp
-> verification if you hit it unaware.
+> Editing a proxy used to strip every xtcp-specific visitor field (`protocol`,
+> `keepTunnelOpen`, `fallbackTo`, …) from the same client — `BUG-01`, fixed in v0.10.1 with
+> `models/client_test.go` as its regression gate. If those fields vanish again during a
+> verification, that is a regression, not an upgrade artefact.
 
 ## 4. Rollout order
 
