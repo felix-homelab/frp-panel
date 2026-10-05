@@ -620,7 +620,7 @@
       },
       "wire_protocol": "內部通訊協定",
       "wire_protocol_description": "v2 為控制通道增加 AEAD 加密。",
-      "wire_protocol_locked": "v2 不可用：需要 frps v0.69 以上，且目前無法確認該伺服器版本。",
+      "wire_protocol_locked": "v2 無法使用：需要此用戶端與伺服器的 agent 都執行 frp v0.69 或更新版本，但目前無法確認（agent 離線、版本過舊無法回報，或用戶端使用外部 frps URL）。",
       "nat_hole_stun_server": "STUN 伺服器",
       "nat_hole_stun_server_description": "XTCP 打洞所需，frp 已提供預設值。",
       "dns_server": "DNS 伺服器",
@@ -668,7 +668,10 @@
       "strip_prefix": "前綴去除",
       "http_user": "HTTP 用戶名",
       "http_password": "HTTP 密碼",
-      "unix_domain_socket_path": "Unix 域套接字路徑"
+      "unix_domain_socket_path": "Unix 域套接字路徑",
+      "request_headers": "請求標頭（設定）",
+      "enable_http2": "啟用 HTTP/2",
+      "enable_http2_description": "透過 ALPN 向用戶端提供 HTTP/2。未設定時 frp 預設啟用。"
     },
     "section": {
       "tls": "TLS",
@@ -920,6 +923,21 @@
         "level": "日誌等級",
         "max_days": "日誌保留天數",
         "disable_print_color": "停用彩色輸出"
+      },
+      "http_plugins": {
+        "description": "frps 會在所選操作時呼叫這些 HTTP 端點，並可能拒絕該操作。它們在面板自身的認證之前執行。",
+        "panel_entry": "由面板管理，一律附加在最後。",
+        "name": "名稱",
+        "addr": "位址",
+        "path": "路徑",
+        "ops": "操作",
+        "login_warning": "處理 Login 的外掛在面板認證之前執行，可以拒絕或改寫此伺服器的所有用戶端登入。",
+        "tls_verify": "驗證 TLS 憑證（僅限 https 位址）",
+        "add": "新增外掛",
+        "remove": "移除外掛",
+        "reserved_name": "此名稱保留給面板的認證外掛。",
+        "ops_required": "請至少選擇一個操作。",
+        "duplicate_name": "外掛名稱不可重複。"
       }
     },
     "create": {
@@ -982,7 +1000,8 @@
       "transport": "傳輸與 TLS",
       "ssh_gateway": "SSH 隧道閘道",
       "dashboard": "控制台與指標",
-      "logging": "日誌"
+      "logging": "日誌",
+      "http_plugins": "HTTP 外掛"
     }
   },
   "auth": {

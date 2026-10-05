@@ -628,7 +628,7 @@
       },
       "wire_protocol": "Protocole interne",
       "wire_protocol_description": "v2 ajoute le chiffrement AEAD au canal de contrôle.",
-      "wire_protocol_locked": "v2 indisponible : nécessite frps v0.69+, et la version du serveur n’est pas confirmée.",
+      "wire_protocol_locked": "v2 indisponible : il faut frp v0.69 ou plus récent sur l’agent de ce client et sur celui du serveur, ce qui n’est pas confirmé (agent hors ligne ou trop ancien pour l’indiquer, ou URL frps externe).",
       "nat_hole_stun_server": "Serveur STUN",
       "nat_hole_stun_server_description": "Requis pour le NAT hole punching XTCP. frp fournit déjà une valeur par défaut.",
       "dns_server": "Serveur DNS",
@@ -676,7 +676,10 @@
       "strip_prefix": "Supprimer le Préfixe",
       "http_user": "Utilisateur HTTP",
       "http_password": "Mot de Passe HTTP",
-      "unix_domain_socket_path": "Chemin du Socket de Domaine Unix"
+      "unix_domain_socket_path": "Chemin du Socket de Domaine Unix",
+      "request_headers": "En-têtes de requête (définir)",
+      "enable_http2": "Activer HTTP/2",
+      "enable_http2_description": "Propose HTTP/2 aux clients via ALPN. frp l'active par défaut."
     },
     "section": {
       "tls": "TLS",
@@ -930,6 +933,21 @@
         "level": "Niveau de journalisation",
         "max_days": "Conservation des journaux (jours)",
         "disable_print_color": "Désactiver la couleur"
+      },
+      "http_plugins": {
+        "description": "frps appelle ces points de terminaison HTTP pour les opérations choisies et peut les refuser. Ils s'exécutent avant l'authentification du panneau.",
+        "panel_entry": "Géré par le panneau ; toujours ajouté en dernier.",
+        "name": "Nom",
+        "addr": "Adresse",
+        "path": "Chemin",
+        "ops": "Opérations",
+        "login_warning": "Un plugin qui gère Login s'exécute avant l'authentification du panneau et peut refuser ou réécrire chaque connexion client de ce serveur.",
+        "tls_verify": "Vérifier le certificat TLS (adresses https uniquement)",
+        "add": "Ajouter un plugin",
+        "remove": "Supprimer le plugin",
+        "reserved_name": "Ce nom est réservé au plugin d'authentification du panneau.",
+        "ops_required": "Sélectionnez au moins une opération.",
+        "duplicate_name": "Les noms de plugin doivent être uniques."
       }
     },
     "create": {
@@ -992,7 +1010,8 @@
       "transport": "Transport et TLS",
       "ssh_gateway": "Passerelle SSH",
       "dashboard": "Tableau de bord et métriques",
-      "logging": "Journalisation"
+      "logging": "Journalisation",
+      "http_plugins": "Plugins HTTP"
     }
   },
   "auth": {

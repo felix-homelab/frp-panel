@@ -65,7 +65,8 @@ export function PluginConfigForm({ defaultPluginConfig, setPluginConfig, support
       plugins &&
       plugins.map((plugin, i) => (
         <SelectItem key={`${i}`} value={plugin}>
-          {pluginTypeMap[plugin]}
+          {/* A stored plugin the form has no label for (e.g. virtual_net) shows its raw name. */}
+          {pluginTypeMap[plugin] ?? plugin}
         </SelectItem>
       ))
     )

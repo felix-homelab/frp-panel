@@ -55,6 +55,7 @@
 //	client.Service.GracefulClose        client.go
 //	client.Service.StatusExporter       client.go
 //	client.Service.UpdateAllConfigurer  client.go
+//	pkg/config.FilterClientConfigurers  client.go
 //	client/proxy.WorkingStatus          client.go
 //	pkg/config/source.NewConfigSource   client.go
 //	pkg/config/source.ConfigSource.ReplaceAll  client.go
@@ -74,8 +75,8 @@
 //	v1.VisitorConfigurer.Complete       config.go
 //	pkg/plugin/server.Request/Response  plugin.go
 //	pkg/plugin/server.LoginContent      plugin.go
-//	pkg/msg.NewProxy                    msg.go
 //	pkg/util/log.Logger                 log.go
+//	pkg/util/version.Full               version.go
 //
 // Things that moved in v0.68 and are now settled here, recorded so the next bump is not
 // re-diagnosed from scratch:

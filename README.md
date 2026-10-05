@@ -8,6 +8,41 @@ FRP-Panel is a visualization management dashboard for FRP, offering centralized 
 
 English | [中文](./README_zh.md)
 
+## About this fork
+
+This repository, **[felix-homelab/frp-panel](https://github.com/felix-homelab/frp-panel)**, is a fork of
+**[VaalaCat/frp-panel](https://github.com/VaalaCat/frp-panel)**, based on upstream v0.1.37. Everything
+else on this page describes the original project, which still applies. What this fork changes:
+
+- **A newer frp.** Built on frp **v0.70.1** (upstream: v0.65.0) and Go 1.25.
+- **Forms instead of raw JSON.** Every proxy type has a form — https, tcpmux, xtcp and sudp included —
+  with sections for encryption, compression, bandwidth limits, health checks, load balancing and
+  headers. Visitors, all nine client plugins, and the full client and server settings have forms too.
+  The raw JSON editors are still there for anything a form does not cover.
+- **Saving no longer loses settings.** Saving a form used to delete settings it did not show, drop
+  visitor options, or quietly accept configs that later broke an agent. These cases are fixed, and
+  configs with duplicate names or invalid server settings are now refused with an error instead.
+- **Switches that actually switch.** Turning a proxy off takes effect right away instead of after the
+  agent restarts, and the proxy list shows it as `disabled`.
+- **Safer advanced options.** Newer frp features such as wire protocol v2 are only offered when both
+  agents involved run a version that supports them.
+- **Your own frps plugins.** Add your own frp server plugins next to the panel's built-in one.
+- **Binaries only.** Releases contain binaries for Linux, macOS, Windows and Android; this fork
+  publishes **no Docker images**.
+
+Good to know:
+
+- **Version numbers are this fork's own.** `v0.10.x` is not an upstream release.
+- **Run the Master, Servers and Clients from this fork together.** An upstream agent may reject settings
+  its older frp does not know (for example, a proxy's *Enabled* switch needs frp v0.66 or newer).
+- **The install scripts, in-app upgrade and "Download" links still fetch upstream's builds.** Until
+  that is changed, download this fork's binaries from its
+  [releases page](https://github.com/felix-homelab/frp-panel/releases).
+
+Details: [CHANGELOG.md](./CHANGELOG.md) (per release, including the full difference to upstream) ·
+[ROADMAP.md](./ROADMAP.md) (what is being worked on) · [FEATURE-MATRIX.md](./FEATURE-MATRIX.md) (frp
+features the UI does not cover yet).
+
 <div align="center">
   <a href="https://trendshift.io/repositories/7147" target="_blank">
     <img src="https://trendshift.io/api/badge/repositories/7147" alt="VaalaCat/frp-panel | Trendshift" width="250" height="55"/>

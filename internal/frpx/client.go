@@ -3,6 +3,7 @@ package frpx
 import (
 	"github.com/fatedier/frp/client"
 	"github.com/fatedier/frp/client/proxy"
+	"github.com/fatedier/frp/pkg/config"
 	"github.com/fatedier/frp/pkg/config/source"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
 	"github.com/fatedier/frp/pkg/config/v1/validation"
@@ -42,6 +43,23 @@ func NewClientService(o ClientOptions) (*ClientService, error) {
 		Common:                 o.Common,
 		ConfigSourceAggregator: source.NewAggregator(cfgSource),
 	})
+}
+
+// UpdateClientConfigurers replaces the proxies and visitors of a running frpc.
+//
+// frp applies FilterClientConfigurers -- the start[] allow-list and each proxy's and
+// visitor's `enabled` -- only when it builds its config itself: in NewService and when
+// reloading from its config source. Service.UpdateAllConfigurer takes the slices as
+// given. Calling it directly therefore left a proxy switched to `enabled: false`
+// running until the agent restarted (BUG-12). Every hot update must come through here.
+func UpdateClientConfigurers(
+	svc *ClientService,
+	common *v1.ClientCommonConfig,
+	proxyCfgs []v1.ProxyConfigurer,
+	visitorCfgs []v1.VisitorConfigurer,
+) error {
+	proxyCfgs, visitorCfgs = config.FilterClientConfigurers(common, proxyCfgs, visitorCfgs)
+	return svc.UpdateAllConfigurer(proxyCfgs, visitorCfgs)
 }
 
 // SetFeatureGates enables or disables frp feature gates process-wide.

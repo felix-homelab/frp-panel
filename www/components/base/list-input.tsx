@@ -45,7 +45,11 @@ const StringListInput: React.FC<StringListInputProps> = ({ value, onChange, plac
           className="flex-1 px-4 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           placeholder={placeholder || t('input.list.placeholder')}
         />
+        {/* type="button": these editors render inside RHF forms, and an untyped
+            button is a submit button -- in the frpc form, "add" pushed the whole
+            client config to the agent (BUG-13). Same for the two editors below. */}
         <Button
+          type="button"
           disabled={!inputValue || value && value.includes(inputValue)}
           onClick={handleAdd}
           className="ml-2 px-4 py-2"
@@ -155,7 +159,7 @@ export const PortRangeListInput: React.FC<PortRangeListInputProps> = ({
           className="flex-1 text-sm"
           placeholder={placeholder || '1000-2000, 3000'}
         />
-        <Button disabled={!inputValue} onClick={handleAdd} className="ml-2 px-4 py-2">
+        <Button type="button" disabled={!inputValue} onClick={handleAdd} className="ml-2 px-4 py-2">
           {t('input.list.add')}
         </Button>
       </div>
@@ -242,7 +246,7 @@ export const KeyValueListInput: React.FC<KeyValueListInputProps> = ({
           className="flex-1 text-sm"
           placeholder={valuePlaceholder || t('input.kv.value_placeholder')}
         />
-        <Button disabled={!keyInput || !!keyError || duplicate} onClick={handleAdd} className="px-4 py-2">
+        <Button type="button" disabled={!keyInput || !!keyError || duplicate} onClick={handleAdd} className="px-4 py-2">
           {t('input.kv.add')}
         </Button>
       </div>

@@ -6,7 +6,6 @@ import (
 	"github.com/VaalaCat/frp-panel/biz/master/client"
 	"github.com/VaalaCat/frp-panel/common"
 	"github.com/VaalaCat/frp-panel/defs"
-	"github.com/VaalaCat/frp-panel/internal/frpx"
 	"github.com/VaalaCat/frp-panel/models"
 	"github.com/VaalaCat/frp-panel/pb"
 	"github.com/VaalaCat/frp-panel/services/app"
@@ -139,27 +138,29 @@ func UpdateProxyConfig(c *app.Context, req *pb.UpdateProxyConfigRequest) (*pb.Up
 	}, nil
 }
 
+// UpdateWorkerLoadBalancerGroup re-derives the load balancer group of a worker-ingress
+// http proxy, in place. Anything that is not a worker-ingress http proxy is returned
+// untouched.
+//
+// It must not rebuild the config through msg.NewProxy: that message carries only the
+// wire subset, and the round-trip used to drop enabled, localIP, localPort, plugin,
+// healthCheck and transport.proxyProtocolVersion on every update (BUG-08).
 func UpdateWorkerLoadBalancerGroup(typedProxyCfg v1.TypedProxyConfig) v1.TypedProxyConfig {
-	annotations := typedProxyCfg.GetBaseConfig().Annotations
-	workerId := ""
-	if len(annotations) > 0 {
-		if annotations[defs.FrpProxyAnnotationsKey_Ingress] != "" && len(annotations[defs.FrpProxyAnnotationsKey_WorkerId]) > 0 {
-			workerId = annotations[defs.FrpProxyAnnotationsKey_WorkerId]
-		}
-	}
-	httpProxyCfg := &v1.HTTPProxyConfig{}
-	msg := &frpx.NewProxyMsg{}
-	typedProxyCfg.ProxyConfigurer.MarshalToMsg(msg)
-	httpProxyCfg.UnmarshalFromMsg(msg)
-
-	if len(workerId) > 0 {
-		httpProxyCfg.LoadBalancer = v1.LoadBalancerConfig{
-			Group:    models.HttpIngressLBGroup(workerId, httpProxyCfg),
-			GroupKey: workerId,
-		}
+	httpProxyCfg, ok := typedProxyCfg.ProxyConfigurer.(*v1.HTTPProxyConfig)
+	if !ok {
+		return typedProxyCfg
 	}
 
-	typedProxyCfg.ProxyConfigurer = httpProxyCfg
+	annotations := httpProxyCfg.Annotations
+	workerId := annotations[defs.FrpProxyAnnotationsKey_WorkerId]
+	if annotations[defs.FrpProxyAnnotationsKey_Ingress] == "" || len(workerId) == 0 {
+		return typedProxyCfg
+	}
+
+	httpProxyCfg.LoadBalancer = v1.LoadBalancerConfig{
+		Group:    models.HttpIngressLBGroup(workerId, httpProxyCfg),
+		GroupKey: workerId,
+	}
 
 	return typedProxyCfg
 }

@@ -99,7 +99,7 @@ func TestTunnelMatrix(t *testing.T) {
 	// Deliberately routed through utils.LoadClientConfig rather than hand-built structs.
 	// That is the exact path production uses (master pushes JSON, agent loads it), and it
 	// is where frp's Complete() fan-out runs -- the thing that changed in frp v0.68.
-	cliCfg, proxyCfgs, visitorCfgs := loadClientConfig(t, fmt.Sprintf(`{
+	cfgJSON := fmt.Sprintf(`{
   "user": %q,
   "serverAddr": "127.0.0.1",
   "serverPort": %d,
@@ -135,7 +135,8 @@ func TestTunnelMatrix(t *testing.T) {
 		tcpBackend,
 		udpBackend,
 		p["stcpVisitor"], p["sudpVisitor"],
-	))
+	)
+	cliCfg, proxyCfgs, visitorCfgs := loadClientConfig(t, cfgJSON)
 
 	cli := fclient.NewClientHandler(cliCfg, proxyCfgs, visitorCfgs)
 	go cli.Run()
@@ -275,6 +276,34 @@ func TestTunnelMatrix(t *testing.T) {
 				"The wire proxy name is expected to be stable across frp versions.", wire, names)
 		}
 	})
+
+	// BUG-12: the master pushes config changes to a running agent as a hot update, and
+	// frp's UpdateAllConfigurer does not apply `enabled` by itself. Runs last because it
+	// takes tcp-test down and back up.
+	t.Run("enabled=false on hot update", func(t *testing.T) {
+		remote := fmt.Sprintf("127.0.0.1:%d", p["tcpRemote"])
+
+		// Fresh structs every time: frp diffs the new configurers against the ones it
+		// holds, so mutating those in place would look like "no change".
+		_, disabled, visitors := loadClientConfig(t, cfgJSON)
+		for _, c := range disabled {
+			if c.GetBaseConfig().Name == "tcp-test" {
+				c.GetBaseConfig().Enabled = new(bool)
+			}
+		}
+		cli.Update(disabled, visitors)
+
+		waitProxyGone(t, cli, "tcp-test")
+		waitPortClosed(t, p["tcpRemote"])
+		assertUDPEcho(t, fmt.Sprintf("127.0.0.1:%d", p["udpRemote"])) // the others stay up
+
+		_, enabled, visitors := loadClientConfig(t, cfgJSON)
+		cli.Update(enabled, visitors)
+
+		waitProxyRunning(t, cli, "tcp-test")
+		waitPortOpen(t, p["tcpRemote"])
+		assertTCPEcho(t, remote)
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -324,6 +353,43 @@ func waitProxyRunning(t *testing.T, cli interface {
 		time.Sleep(200 * time.Millisecond)
 	}
 	t.Fatalf("proxy %q never reached %q within %s (last: %s)", rawName, phaseRunning, startupTimeout, last)
+}
+
+// waitProxyGone blocks until the client no longer reports the named proxy at all, under
+// either name form -- which is what frp does for a proxy it has filtered out.
+func waitProxyGone(t *testing.T, cli interface {
+	GetProxyStatus(string) (*frpx.ProxyWorkingStatus, bool)
+}, rawName string) {
+	t.Helper()
+
+	wireName := frpx.WireProxyName(testUser, rawName)
+	deadline := time.Now().Add(startupTimeout)
+	for time.Now().Before(deadline) {
+		_, rawOK := cli.GetProxyStatus(rawName)
+		_, wireOK := cli.GetProxyStatus(wireName)
+		if !rawOK && !wireOK {
+			return
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	t.Fatalf("proxy %q is still registered %s after being disabled", rawName, startupTimeout)
+}
+
+// waitPortClosed is waitPortOpen's inverse: frps releases a proxy's remote port once
+// the client stops serving it.
+func waitPortClosed(t *testing.T, port int) {
+	t.Helper()
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	deadline := time.Now().Add(startupTimeout)
+	for time.Now().Before(deadline) {
+		conn, err := net.DialTimeout("tcp", addr, 500*time.Millisecond)
+		if err != nil {
+			return
+		}
+		_ = conn.Close()
+		time.Sleep(150 * time.Millisecond)
+	}
+	t.Fatalf("port %d is still open %s after its proxy was disabled", port, startupTimeout)
 }
 
 func waitPortOpen(t *testing.T, port int) {

@@ -7,6 +7,7 @@
     "build": "next build && rm -rf ../cmd/frpp/out && cp -r out ../cmd/frpp",
     "start": "next start",
     "lint": "next lint",
+    "test": "node --import ./test/register.mjs --test test/*.test.mjs",
     "i18n:extract": "pnpx i18next-parser"
   },
   "dependencies": {

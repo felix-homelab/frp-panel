@@ -42,10 +42,46 @@ jobs:
       - name: Vet
         run: go vet ./conf/... ./internal/... ./services/... ./utils/... ./biz/...
 
+      # services/dao runs against a temporary sqlite file; biz/... holds the handler tests.
       - name: Unit tests
-        run: go test ./conf/... ./models/... ./services/wg/... ./utils/... ./internal/...
+        run: go test ./conf/... ./models/... ./services/wg/... ./services/dao/... ./utils/... ./internal/... ./biz/... ./hack/...
 
       # The real gate for an frp upgrade: stands up a live frps + frpc in one process and
-      # pushes bytes through tcp, udp, http, https, stcp, sudp and tcpmux.
+      # pushes bytes through tcp, udp, http, https, stcp, sudp and tcpmux (xtcp is skipped
+      # on loopback), then checks that `enabled: false` takes effect on a hot update.
       - name: Tunnel integration tests
         run: go test -tags integration -run TestTunnelMatrix -timeout 5m ./internal/frpx/...
+
+  # The frontend gate FEATURE-MATRIX.md always described but this workflow never ran.
+  www:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: www
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          # Same major as release.yml.
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: www/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Lint
+        run: pnpm lint
+
+      # Type-checks and compiles the static export. `pnpm build` would also copy it into
+      # cmd/frpp/out, which this job does not need.
+      - name: Build
+        run: pnpm exec next build

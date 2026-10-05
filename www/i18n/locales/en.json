@@ -624,7 +624,7 @@
       },
       "wire_protocol": "Wire protocol",
       "wire_protocol_description": "v2 adds AEAD encryption to the control channel.",
-      "wire_protocol_locked": "v2 is unavailable: it requires frps v0.69 or newer, and this server’s version is not confirmed.",
+      "wire_protocol_locked": "v2 is unavailable: it needs frp v0.69 or newer on both this client’s agent and the server’s agent, and that is not confirmed (an agent is offline or too old to report it, or the client uses an external frps URL).",
       "nat_hole_stun_server": "STUN server",
       "nat_hole_stun_server_description": "Required for XTCP hole punching. Already defaulted by frp.",
       "dns_server": "DNS server",
@@ -672,7 +672,10 @@
       "strip_prefix": "Strip Prefix",
       "http_user": "HTTP User",
       "http_password": "HTTP Password",
-      "unix_domain_socket_path": "Unix Domain Socket Path"
+      "unix_domain_socket_path": "Unix Domain Socket Path",
+      "request_headers": "Request headers (set)",
+      "enable_http2": "Enable HTTP/2",
+      "enable_http2_description": "Offer HTTP/2 to clients via ALPN. frp enables it when unset."
     },
     "section": {
       "tls": "TLS",
@@ -925,6 +928,21 @@
         "level": "Log level",
         "max_days": "Retain logs (days)",
         "disable_print_color": "Disable coloured output"
+      },
+      "http_plugins": {
+        "description": "frps calls these HTTP endpoints for the selected operations and can reject them. Runs before the panel's own authentication.",
+        "panel_entry": "Managed by the panel; always appended last.",
+        "name": "Name",
+        "addr": "Address",
+        "path": "Path",
+        "ops": "Operations",
+        "login_warning": "A plugin that handles Login runs before the panel's authentication and can reject or rewrite every client login on this server.",
+        "tls_verify": "Verify TLS certificate (https addresses only)",
+        "add": "Add plugin",
+        "remove": "Remove plugin",
+        "reserved_name": "This name is reserved for the panel's authentication plugin.",
+        "ops_required": "Select at least one operation.",
+        "duplicate_name": "Plugin names must be unique."
       }
     },
     "create": {
@@ -987,7 +1005,8 @@
       "transport": "Transport & TLS",
       "ssh_gateway": "SSH Tunnel Gateway",
       "dashboard": "Dashboard & Metrics",
-      "logging": "Logging"
+      "logging": "Logging",
+      "http_plugins": "HTTP plugins"
     }
   },
   "auth": {

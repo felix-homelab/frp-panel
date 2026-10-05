@@ -5,14 +5,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@radix-ui/react-label'
 import { TypedProxyForm } from './proxy_form'
 import { Button } from '@/components/ui/button'
-import { Client, RespCode } from '@/lib/pb/common'
+import { Client, ClientType, RespCode } from '@/lib/pb/common'
 import { ClientConfig } from '@/types/client'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { Input } from '@/components/ui/input'
 import { AccordionHeader } from '@radix-ui/react-accordion'
-import { QueryObserverResult, RefetchOptions, useMutation } from '@tanstack/react-query'
+import { QueryObserverResult, RefetchOptions, useMutation, useQuery } from '@tanstack/react-query'
 import { updateFRPC } from '@/api/frp'
+import { getClientsStatus } from '@/api/platform'
+import { SupportsWireProtocolV2 } from '@/config/notify'
 import { GetClientResponse } from '@/lib/pb/api_client'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -82,6 +84,29 @@ export const FRPCForm: React.FC<FRPCFormProps> = ({ clientID, serverID, clientCo
   }
 
   const updateFrpc = useMutation({ mutationFn: updateFRPC })
+
+  // wireProtocol v2 needs frp >= v0.69 on both agents (BUMP-07). An external frps has no
+  // agent to ask, so v2 stays locked for it; the master enforces the same rule on save.
+  const externalFrps = !!(frpsUrl || client?.frpsUrl)
+  const agentID = client?.originClientId || clientID
+  const { data: agentFrpVersions } = useQuery({
+    queryKey: ['agentFrpVersions', agentID, serverID],
+    queryFn: async () => {
+      const [cli, srv] = await Promise.all([
+        getClientsStatus({ clientIds: [agentID], clientType: ClientType.FRPC }),
+        getClientsStatus({ clientIds: [serverID], clientType: ClientType.FRPS }),
+      ])
+      return {
+        client: cli.clients[agentID]?.version?.frpVersion,
+        server: srv.clients[serverID]?.version?.frpVersion,
+      }
+    },
+    enabled: !!agentID && !!serverID && !externalFrps,
+  })
+  const allowWireProtocolV2 =
+    !externalFrps &&
+    SupportsWireProtocolV2(agentFrpVersions?.client) &&
+    SupportsWireProtocolV2(agentFrpVersions?.server)
 
   const handleUpdate = async (values: ClientCommonConfigValues) => {
     // The client query is keyed on (clientID, serverID) and has no placeholderData, so
@@ -174,9 +199,9 @@ export const FRPCForm: React.FC<FRPCFormProps> = ({ clientID, serverID, clientCo
           <FRPCAdvancedSections
             control={form.control}
             reservedMetadatas={{ token: '••••', 'x-vaala-frp-client-id': clientID }}
-            // Fail closed: without a reliable frp version for the target server, a v2
-            // client that cannot reach it fails silently, which is worse than a missing option.
-            allowWireProtocolV2={false}
+            // Fail closed: without a known frp version on both agents, a v2 client that
+            // cannot reach its server fails silently, which is worse than a missing option.
+            allowWireProtocolV2={allowWireProtocolV2}
           />
         </form>
       </Form>

@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
-import { ServerConfigZodSchema as ServerConfigSchema } from './form/schema'
+import { ServerConfigZodSchema as ServerConfigSchema, splitHTTPPlugins } from './form/schema'
 import { FRPSAdvancedSections } from './form/sections'
 import { RespCode, Server } from '@/lib/pb/common'
 import { updateFRPS } from '@/api/frp'
@@ -48,7 +48,12 @@ const FRPSForm: React.FC<FRPSFormProps> = ({ serverID, server, frpsUrls }) => {
   useEffect(() => {
     const parsed = JSON.parse(server?.config || '{}') as ServerConfig
     setLoadedConfig(parsed)
-    form.reset(parsed)
+    // The form edits user plugin entries only; the panel's auth entry is display-only
+    // and the backend re-attaches it, so submitting without it is correct.
+    // The cast narrows `ops: string[]` to frp's op enum; the resolver re-checks it on submit.
+    form.reset({ ...parsed, httpPlugins: splitHTTPPlugins(parsed.httpPlugins).user } as z.infer<
+      typeof ServerConfigSchema
+    >)
   }, [server])
 
   const onSubmit = async (values: z.infer<typeof ServerConfigSchema>) => {
@@ -95,7 +100,10 @@ const FRPSForm: React.FC<FRPSFormProps> = ({ serverID, server, frpsUrls }) => {
             <HostField name="subDomainHost" label={t('server.form.subdomain_host')} control={form.control} />
             <PortField name="quicBindPort" label={t('server.form.quic_bind_port')} control={form.control} />
             <PortField name="kcpBindPort" label={t('server.form.kcp_bind_port')} control={form.control} />
-            <FRPSAdvancedSections control={form.control} />
+            <FRPSAdvancedSections
+              control={form.control}
+              panelHTTPPlugin={splitHTTPPlugins(loadedConfig.httpPlugins).panel}
+            />
             <Button type="submit">{t('common.submit')}</Button>
           </form>
         </Form>

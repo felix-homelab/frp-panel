@@ -6,7 +6,7 @@
 # change. The upstream tag workflows are disabled repo-side (Actions -> Workflows ->
 # Disable) so the two do not race for the same release.
 #
-# It differs from upstream's tag.workflow.yml in exactly two ways:
+# It differs from upstream's tag.workflow.yml in exactly three ways:
 #
 #   1. `permissions: contents: write`. This repo's default GITHUB_TOKEN permission is
 #      read-only, which is why upstream's workflow died with "Resource not accessible by
@@ -17,6 +17,9 @@
 #   2. No `ko` / Docker Hub push. Those steps need DOCKERHUB_USERNAME and DOCKERHUB_TOKEN,
 #      which are not set here, and they are hardcoded to docker.io/vaalacat/frp-panel --
 #      upstream's namespace, not ours.
+#
+#   3. Release notes are the tag's section of CHANGELOG.md, and a tag without one is not
+#      released (.github/scripts/changelog-section.sh).
 #
 # The build steps below are copied verbatim from upstream's tag.workflow.yml. They are
 # known-green on this fork as of v0.10.0 (that run reached the release step before
@@ -40,6 +43,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # Release notes come from CHANGELOG.md, one section per tag. A tag without a section
+      # fails here, before anything is built or published. Relative .md links are made
+      # absolute, because they would not resolve on the release page.
+      - name: Release notes from CHANGELOG.md
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          bash .github/scripts/changelog-section.sh "${GITHUB_REF_NAME}" CHANGELOG.md \
+            | sed -E "s#\]\(([A-Za-z0-9_./-]+\.md)\)#](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/\1)#g" \
+            > "${RUNNER_TEMP}/release-notes.md"
+          cat "${RUNNER_TEMP}/release-notes.md"
 
       - name: npm setup
         uses: actions/setup-node@v4
@@ -67,6 +82,8 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: dist/*
+          body_path: ${{ runner.temp }}/release-notes.md
+          # Appended below the CHANGELOG section: the commit and PR list for the tag.
           generate_release_notes: true
           # dist/ silently empty would publish a release with no binaries -- the exact
           # failure this workflow exists to prevent.

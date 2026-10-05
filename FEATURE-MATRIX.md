@@ -1,6 +1,6 @@
 # frp Feature Gap Matrix
 
-> **frp-panel @ `eec2a63`+working tree · frp v0.70.1 · go 1.25.0 · reviewed 2026-08-11**
+> **frp-panel @ `dd79e50`+working tree · frp v0.70.1 · go 1.25.0 · reviewed 2026-10-05**
 
 This is the project's backlog: every `frp` capability that frp-panel does not surface, scored and
 prioritized. Rows are stable handles — reference them from commits, issues, and PRs.
@@ -74,8 +74,7 @@ capability grounds.** V5 means broken, silently lossy, or advertised-but-unusabl
 
 | ID | Issue | St | D | V |
 |---|---|---|---|---|
-| **BUG-08** | **`UpdateWorkerLoadBalancerGroup` destroys six fields on every http proxy update.** `biz/master/proxy/update_proxy_config.go:139-163` round-trips the config through `frpx.NewProxyMsg` (`msg.NewProxy`) and rebuilds a fresh `HTTPProxyConfig`. `msg.NewProxy` carries none of `enabled`, `transport.proxyProtocolVersion`, `healthCheck.*`, `localIP`, `localPort`, `plugin`. **Latent only** because `updateProxyConfig` (`www/api/proxy.ts:31`) has zero frontend callers — the edit path goes through `createProxyConfig({overwrite: true})`. Strictly worse than BUG-01 was. | bug | 2 | 5 |
-| **BUG-09** | **frp-level `enabled` and panel-level `ProxyConfig.Stopped` are independent and can disagree.** The proxy list's start/stop action drives `Stopped`; the form switch drives `enabled`. A proxy can read "running" in the list while frp has it disabled, or vice versa. Needs a decision on which is authoritative, not just a display fix. | bug | 3 | 3 |
+| **BUG-09** | **frp-level `enabled` and panel-level `ProxyConfig.Stopped` are independent and can disagree.** The proxy list's start/stop action drives `Stopped`; the form switch drives `enabled`. A proxy can read "running" in the list while frp has it disabled, or vice versa. Needs a decision on which is authoritative, not just a display fix. Also: editing a stopped proxy resurrects it — `create_proxy_config.go` never reads `Stopped` and re-adds the proxy to the client config. Options and a recommendation: `ROADMAP.md` → Decisions. | bug | 3 | 3 |
 
 ### Closed in this pass
 
@@ -90,6 +89,19 @@ proxy/visitor names collapsed silently — frp's own check lives in the path-bas
 codebase never calls, so `utils.ValidateNoDuplicateNames` now mirrors it · **BUG-11** (new)
 `UpdateFrpsHander` never validated the config it stored, so a decodable-but-invalid frps config
 (bad `log.level`, bad `httpPlugins.ops`) was a remote-reachable panic on the Server agent.
+
+Closed 2026-10-05: **BUG-08** `UpdateWorkerLoadBalancerGroup` now mutates the `*HTTPProxyConfig` in
+place instead of round-tripping it through `msg.NewProxy`; `frpx.NewProxyMsg` is deleted so the trap
+cannot come back (`biz/master/proxy/update_proxy_config_test.go`) · **BUG-12** (new) `enabled: false`
+was applied only when frpc was *created* — frp's `Service.UpdateAllConfigurer` does not run
+`FilterClientConfigurers` — so on every hot update a disabled proxy kept running; every update now
+goes through `frpx.UpdateClientConfigurers`, and the master reports `disabled` rather than `error`
+for such a proxy (`TestTunnelMatrix/enabled=false_on_hot_update`) · **BUG-13** (new) the "add"
+buttons in `www/components/base/list-input.tsx` were untyped, i.e. submit buttons, so adding a
+metadata key in the frpc form pushed the whole client config · **BUG-14** (new)
+`RebuildProxyConfigFromClient` looked old rows up by `OriginClientID == <child id>`, which never
+matches, so every rebuild re-created every row under a new ID and duplicated a stopped row whose
+name came back; existing duplicates collapse on the next rebuild (`services/dao/proxy_test.go`).
 
 ---
 
@@ -132,10 +144,15 @@ Two panel-owned hazards are guarded, and **must stay guarded**:
 All 9 frp client plugins have forms (`www/components/frpc/plugins/`). `virtual_net` is the tenth and
 is deliberately absent.
 
+Closed 2026-10-05: **PLG-05** each proxy type is offered only plugins that can work behind it
+(`proxy_forms/shared/plugins.ts`, with the reasoning per type; a stored plugin stays selectable) ·
+**PLG-04** `requestHeaders.set` on the four http(s)2http(s) plugins plus `enableHTTP2` on the two
+https ones (`plugins/shared_fields.tsx`). The row was mis-scoped: frp v0.70.1 plugin options have
+**no `responseHeaders`** — only `HTTPProxyConfig` does — and a form emitting it would have been
+rejected by the strict decoder. `enableHTTP2` was also missing from the TS mirror.
+
 | ID | Feature | St | D | V | P |
 |---|---|---|---|---|---|
-| PLG-04 | `requestHeaders` / `responseHeaders` on http2http, http2https, https2http, https2https | gap | 2 | 2 | P3 |
-| PLG-05 | Wire up the `supportedPlugins` narrowing prop — declared at `client_plugins.tsx:40`, passed by no caller, so e.g. an `https` proxy is offered `static_file` | gap | 1 | 2 | P3 |
 | PLG-03 | `virtual_net` plugin form | won't-do | — | — | — |
 
 > **PLG-03 is blocked by design, not by effort.** `virtual_net` is alpha and gated off by default in
@@ -157,7 +174,7 @@ Now an RHF form with accordion sections (`www/components/frpc/form/`). Closed: *
 |---|---|---|---|
 | FC-06 | `auth.{method,token,oidc.*}` | won't-do | frp-panel authenticates through the frps `multiuser` HTTP plugin plus `user` + `metadatas[token]`. frps runs the built-in verifier *as well*, and it passes today only because both ends have an empty token. Setting a token on one side without atomically setting it on every frpc bound to that server drops every tunnel at once — and `update_tunnel.go` writes one client at a time, so a form field guarantees an outage window. See **FS-06** for the replacement proposal. |
 | FC-08 | `featureGates`, `virtualNet.address` | won't-do (as a per-client field) | Process-global on the agent, as above. Documented in `www/types/client.ts` so it is visible to anyone auditing from the TS mirror. Belongs in `conf/settings.go` if ever wanted. |
-| FC-09 | `start[]` | won't-do | Superseded by frp's per-proxy `enabled`, which the panel already wires. Three overlapping enable mechanisms (`start[]`, `enabled`, `ProxyConfig.Stopped`) is already one too many — see **BUG-09**. `utils/load.go:82-90` keeps the filter for raw-editor compatibility. |
+| FC-09 | `start[]` | won't-do | Superseded by frp's per-proxy `enabled`, which the panel already wires. Three overlapping enable mechanisms (`start[]`, `enabled`, `ProxyConfig.Stopped`) is already one too many — see **BUG-09**. `utils/load.go:123-132` keeps the filter for raw-editor compatibility. |
 | FC-10 | `includes[]` | won't-do | Resolves paths on the agent's filesystem. frp-panel's model is DB-sourced config pushed over gRPC, and `internal/frpx/config.go` never uses the path-based loader, so the key would be accepted and then silently ignored — worse than absent. |
 
 ---
@@ -172,17 +189,18 @@ Prometheus, **FS-04** transport + TLS, **FS-05** SSH tunnel gateway, **FS-07** t
 
 | ID | Feature | St | D | V | P |
 |---|---|---|---|---|---|
-| FS-11 | `httpPlugins[]` — user-added entries | gap | 2 | 2 | P3 |
 | FS-06 | `auth.{method,token,oidc.*}` | won't-do | — | — | — |
 | **FS-12** | **Panel-managed shared auth token** — replaces FS-06/FC-06. Store one token on the `Server` record and have the backend inject it into the frps blob *and* every child frpc blob in one transaction, alongside `metadatas[token]`. This is the only way to set an frp auth token without an outage window. | gap | 4 | 3 | P2 |
 
-> **FS-11 must preserve the panel's own entry.** `conf/helper.go:39-52` appends a `multiuser` plugin
-> that frps calls back into to authenticate every tunnel; both `biz/master/server/update_tunnel.go`
-> and `biz/server/rpc_pull_config.go` strip-and-re-append it. A UI must render it read-only, submit
-> only user entries, and reject a user entry named `multiuser`. Note `ops` is validated by frp
-> (`lo.Every(SupportedHTTPPluginOps, ...)`) — a bad value used to panic the Server agent, and now
-> returns a form error thanks to BUG-11.
+Closed 2026-10-05: **FS-11** user `httpPlugins[]` entries (`www/components/frps/form/http_plugins.tsx`).
 
+> **The panel's own entry stays panel-owned.** frps calls the `multiuser` plugin back to authenticate
+> every login. The master and the Server agent both rebuild the list with `conf.WithFRPsAuthPlugin`
+> (one tested helper; it replaced two inline copies): every entry by that name is dropped and the
+> panel's is appended last. The form renders it read-only, submits user entries only, and zod rejects
+> a user entry named `multiuser` or a duplicate name. frp calls Login plugins **in list order with
+> mutable content**, so a user Login plugin runs before the panel's and can reject or rewrite every
+> login — the form says so when `Login` is ticked.
 ---
 
 ## 6. Visitors — closed
@@ -221,7 +239,7 @@ Two details that are load-bearing and easy to get wrong later:
 | frpc `user` | Set to the panel account name. Also a security boundary — it namespaces proxy names on the wire and drives `allowUsers` | `biz/master/client/update_tunnel.go:143` |
 | frpc `metadatas["token"]`, `metadatas["x-vaala-frp-client-id"]` | Panel auth + client identity. **Only these two keys** — the master *merges* rather than replaces, so user keys survive, which is why they are editable in the form | `biz/master/client/update_tunnel.go:145-150`, `defs/const.go:20,23` |
 | frpc `transport.protocol` | **Exposed but mediated.** Users can set it, but the backend derives `serverPort` from it and the frps-URL path overwrites it from the URL scheme. Do not add a `serverPort` field alongside it | `biz/master/client/update_tunnel.go:98-150` |
-| frps `httpPlugins[]` entry named `multiuser` | The panel's own auth plugin | `conf/helper.go:39-52` |
+| frps `httpPlugins[]` entry named `multiuser` | The panel's own auth plugin; user entries around it are fine (FS-11) | `conf/frps_auth_plugin.go` (`WithFRPsAuthPlugin`), entry built by `conf.FRPsAuthOption` |
 | frps form `publicHost` | **Not an frp field.** A panel-level value, stripped before submit and sent as the `server_ip` request param | `www/components/frps/frps_form.tsx` |
 | frpc `store` | Deliberately disabled — a persisted agent-side store would resurrect proxies the master deleted | `internal/frpx/client.go:31-37` |
 
@@ -233,19 +251,25 @@ frp is pinned at **v0.70.1** (`go.mod:13`), go 1.25.0 (`go.mod:3`).
 
 | ID | frp | Feature | St | D | V |
 |---|---|---|---|---|---|
-| BUMP-07 | 0.69 | `transport.wireProtocol` v1/v2 | partial | 3 | 3 |
-| BUMP-04 | 0.67 | Native frpc `clientID`; retire `metadatas["x-vaala-frp-client-id"]` | gap | 3 | 3 |
+| BUMP-04 | 0.67 | Native frpc `clientID`; retire `metadatas["x-vaala-frp-client-id"]` | gap — **recommended won't-do**, see below | 3 | 3 |
 | BUMP-03 | 0.66 | OIDC `tokenSource` | won't-do | — | 1 |
 
-**BUMP-07 is shipped fail-closed and needs finishing.** The field, the enum and the description are
-in place, but `allowWireProtocolV2` is hardcoded `false`, so `v2` is never offered. That is the
-correct default — a `v2` frpc **cannot connect to an frps older than v0.69**, and the failure mode is
-a tunnel that silently never comes up. To finish it: the panel already receives each Server agent's
-`pb.ClientVersion.GitVersion` (`biz/server/rpc_handler.go:37`), and frp is pinned in `go.mod`, so the
-agent's panel version determines its frp version. Add a `SupportsWireV2(version)` helper next to
-`www/config/notify.ts`'s existing version-compare, and an authoritative backend check in
-`biz/master/client/update_tunnel.go` — **outside** the frpsUrl branch, and rejecting `v2`
-unconditionally when `frpsUrl` points at an external frps whose version cannot be known.
+**BUMP-04 adds a failure mode and buys nothing the panel uses.** With `clientID` set, frps enforces
+one online session per `(user, clientID)` and refuses a login from a new run ID while the old session
+is still registered (`server/registry/registry.go:94`). A new run ID is exactly what an agent restart,
+or the agent recreating its frpc when the common config changes, produces. frpc's `loginFailExit`
+defaults to `true` (`pkg/config/v1/client.go:88`), so losing that race makes frpc **exit** with the
+agent's whole tunnel set down. Nothing in the panel reads frp's clientID. And the metadata key is not
+dead: it is written at `biz/master/client/update_tunnel.go:150` and read nowhere in this repo, but
+since FS-11 user frps plugins receive login metadata and can use it to identify a client. Retiring it
+would break them.
+
+**BUMP-07 is closed.** `v2` is offered only when both the client agent and the server agent report
+frp ≥ v0.69: agents now send `ClientVersion.FrpVersion` (CAP-01, `frpx.Version()`), the form reads it
+through `getClientsStatus`, and `biz/master/client/wire_protocol.go` re-checks it on every save. The
+check runs outside the frpsUrl branch, always refuses `v2` for an external frps, and fails closed for
+an offline agent or one too old to report its version. That last part means a client set to `v2`
+can only be saved while both agents are online.
 
 **BUMP-03 is unreachable**, not merely parked: `internal/frpx/{client,server}.go` pass a nil
 `UnsafeFeatures`, and frp's only unsafe feature is `TokenSourceExec`. Only `tokenSource.file` could
@@ -253,7 +277,7 @@ ever work, and it depends on FC-06/FS-06, which are won't-do.
 
 ### Closed or rejected in this pass
 
-`BUMP-00` frp v0.65.0 → v0.70.1 — **done** (commit `eec2a63`) · `BUMP-01` per-proxy `enabled` —
+`BUMP-07` wireProtocol v2 — **done** 2026-10-05, see above · `BUMP-00` frp v0.65.0 → v0.70.1 — **done** (commit `eec2a63`) · `BUMP-01` per-proxy `enabled` —
 **done**, see BUG-09 for the follow-on · `BUMP-02` `loadBalancer` for https — **deleted**,
 `loadBalancer` lives on `ProxyBaseConfig` so it always applied to every type; folded into PF-06 ·
 `BUMP-05` frpc `[store]` — **rejected**, decision recorded in `internal/frpx/client.go:31-37` ·
@@ -272,18 +296,29 @@ the bump**, no panel surface · `BUMP-10` duplicate name rejection — **done**,
 have to answer is *"is this field exposed in the UI?"*, and that is not mechanically derivable —
 fields reach forms through zod schema keys, JSX `name=` props, object spreads, and the raw editor.
 
-**One thing is worth automating, and still is not built.** A small `hack/frpdrift/main.go` (~60
-lines, `reflect` only) can reflect over `v1.ClientCommonConfig`, `v1.ServerConfig`, every proxy and
-visitor config type, and the client-plugin registry, emit the flat set of JSON field paths, and diff
-it against the field names mentioned anywhere in this file. It answers exactly one question:
+**One thing is automated: `hack/frpdrift`** (built 2026-10-05). It reflects over
+`v1.ClientCommonConfig`, `v1.ServerConfig`, every proxy and visitor type and every client and visitor
+plugin, emits the flat set of JSON field paths the strict decoder accepts, and diffs it against
+`hack/frpdrift/known.txt` — the set accepted at the last review. It answers exactly one question:
 
-> *Has frp gained a field this matrix has never heard of?*
+> *Has frp gained (or dropped) a field since this matrix was last reviewed?*
 
 It is what would have caught `featureGates`, `virtualNet`, `clientID`, `store`,
 `HTTPProxyConfig.responseHeaders`, `XTCPProxyConfig.natTraversal` and
 `XTCPVisitorConfig.natTraversal.disableAssistedAddrs` — all of which were absent from both the TS
-mirror and this matrix until the v0.70.1 review. Run on demand: `go run ./hack/frpdrift`.
-Deliberately **not** wired into CI, because that would mean editing a shared workflow file.
+mirror and this matrix until the v0.70.1 review.
+
+```bash
+go run ./hack/frpdrift          # exit 1 and list +added / -removed paths on drift
+go run ./hack/frpdrift -write   # after reviewing each one against this file
+```
+
+A baseline file rather than "every name mentioned in this file", because closed rows are deleted from
+here by convention, so a name-mention diff would grow noisier with every closed row. The check itself
+is not part of CI on purpose — drift is a review prompt, not a failure — but the walker's tests are,
+and `TestCurrentPathsAgainstLinkedFrp` pins the facts this file relies on (TLS inlined under
+`transport.tls`, no `responseHeaders` on plugins). It cannot detect a new proxy, visitor or plugin
+*type*: frp's type registries are unexported, so the type list in `main.go` is maintained by hand.
 
 **Conventions**
 
@@ -304,14 +339,20 @@ upstream). It runs:
 mkdir -p cmd/frpp/out && touch cmd/frpp/out/.gitkeep   # once per clone; the go:embed target
 go build ./...
 go vet ./conf/... ./internal/... ./services/... ./utils/... ./biz/...
-go test ./conf/... ./models/... ./services/wg/... ./utils/... ./internal/...
+go test ./conf/... ./models/... ./services/wg/... ./services/dao/... ./utils/... ./internal/... ./biz/...
 go test -tags integration -run TestTunnelMatrix -timeout 5m ./internal/frpx/...
-cd www && pnpm lint && pnpm build
+cd www && pnpm test && pnpm lint && pnpm exec next build
 ```
+
+Until 2026-10-05 the workflow had no frontend job at all, although this section listed one.
+`pnpm test` runs `www/test/*.test.mjs` on Node's built-in test runner; `www/test/ts-hooks.mjs` resolves
+the `@/` alias and transpiles TypeScript with the project's own compiler, so it adds no dependency.
+It covers pure modules only — there is no DOM.
 
 Note the package list rather than `./...`: `services/workerd`'s `TestRunWorker` hardcodes
 `/home/coder/...` paths and only passes in the original author's dev container. That is pre-existing.
 
 `TestTunnelMatrix` (`internal/frpx/tunnel_integration_test.go`) stands up a live frps + frpc in one
-process and pushes real bytes through all 8 proxy types and an stcp visitor. It is the real gate for
-anything touching config shape.
+process and pushes real bytes through 7 of the 8 proxy types (xtcp is skipped on loopback) and
+stcp / sudp visitors, then checks that `enabled: false` takes effect on a hot update. It is the real
+gate for anything touching config shape.

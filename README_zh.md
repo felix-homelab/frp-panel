@@ -8,6 +8,13 @@ FRP-Panel 是一款基于 FRP 的可视化管理面板，提供中心化配置�
 
 中文文档 | [English](./README.md)
 
+> **关于本分支：** 本仓库 [felix-homelab/frp-panel](https://github.com/felix-homelab/frp-panel) 是
+> [VaalaCat/frp-panel](https://github.com/VaalaCat/frp-panel) 的分支（基于上游 v0.1.37）。主要区别：基于 frp
+> v0.70.1、所有代理类型 / 访问者 / 客户端插件以及 frpc、frps 设置均提供表单、修复了保存时丢失配置等问题，且只发布二进制文件、
+> 不发布 Docker 镜像。安装脚本、应用内升级和"下载"链接目前仍指向上游版本，请从本分支的
+> [Releases](https://github.com/felix-homelab/frp-panel/releases) 下载。详见英文 [README](./README.md#about-this-fork)
+> 与 [CHANGELOG.md](./CHANGELOG.md)。
+
 <div align="center">
 <a href="https://trendshift.io/repositories/7147" target="_blank"><img src="https://trendshift.io/api/badge/repositories/7147" alt="VaalaCat%2Ffrp-panel | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 </div>
