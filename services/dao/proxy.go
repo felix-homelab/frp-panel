@@ -289,7 +289,14 @@ func (m *proxyMutation) RebuildProxyConfigFromClient(userInfo models.UserInfo, c
 		proxyCfg := &models.ProxyConfig{
 			ProxyConfigEntity: &models.ProxyConfigEntity{},
 		}
-		if oldProxyCfg, err := query.GetProxyConfigByOriginClientIDAndName(userInfo, client.ClientID, pxyCfg.GetBaseConfig().Name); err == nil {
+		// Look the old row up by the column this rebuild writes, ClientID. Matching
+		// OriginClientID against client.ClientID (as this used to) never hits for a child
+		// client, so every rebuild re-created every row under a new ID, and a stopped row
+		// -- spared by the delete below -- was duplicated when its name came back (BUG-14).
+		if oldProxyCfg, err := query.GetProxyConfigByFilter(userInfo, &models.ProxyConfigEntity{
+			ClientID: client.ClientID,
+			Name:     pxyCfg.GetBaseConfig().Name,
+		}); err == nil {
 			logger.Logger(context.Background()).WithError(err).Warnf("proxy config already exist, will be override, clientID: [%s], name: [%s]",
 				client.ClientID, pxyCfg.GetBaseConfig().Name)
 			proxyCfg.Model = oldProxyCfg.Model
