@@ -55,6 +55,7 @@
 //	client.Service.GracefulClose        client.go
 //	client.Service.StatusExporter       client.go
 //	client.Service.UpdateAllConfigurer  client.go
+//	pkg/config.FilterClientConfigurers  client.go
 //	client/proxy.WorkingStatus          client.go
 //	pkg/config/source.NewConfigSource   client.go
 //	pkg/config/source.ConfigSource.ReplaceAll  client.go

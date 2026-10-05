@@ -100,17 +100,17 @@ func (c *clientImpl) Stop() {
 func (c *clientImpl) Update(proxyCfgs []v1.ProxyConfigurer, visitorCfgs []v1.VisitorConfigurer) {
 	c.ProxyCfgs = lo.SliceToMap(proxyCfgs, utils.TransformProxyConfigurerToMap)
 	c.VisitorCfgs = lo.SliceToMap(visitorCfgs, utils.TransformVisitorConfigurerToMap)
-	c.cli.UpdateAllConfigurer(proxyCfgs, visitorCfgs)
+	frpx.UpdateClientConfigurers(c.cli, c.Common, proxyCfgs, visitorCfgs)
 }
 
 func (c *clientImpl) AddProxy(proxyCfg v1.ProxyConfigurer) {
 	c.ProxyCfgs[proxyCfg.GetBaseConfig().Name] = proxyCfg
-	c.cli.UpdateAllConfigurer(lo.Values(c.ProxyCfgs), lo.Values(c.VisitorCfgs))
+	frpx.UpdateClientConfigurers(c.cli, c.Common, lo.Values(c.ProxyCfgs), lo.Values(c.VisitorCfgs))
 }
 
 func (c *clientImpl) AddVisitor(visitorCfg v1.VisitorConfigurer) {
 	c.VisitorCfgs[visitorCfg.GetBaseConfig().Name] = visitorCfg
-	c.cli.UpdateAllConfigurer(lo.Values(c.ProxyCfgs), lo.Values(c.VisitorCfgs))
+	frpx.UpdateClientConfigurers(c.cli, c.Common, lo.Values(c.ProxyCfgs), lo.Values(c.VisitorCfgs))
 }
 
 func (c *clientImpl) RemoveProxy(proxyCfg v1.ProxyConfigurer) {
@@ -118,7 +118,7 @@ func (c *clientImpl) RemoveProxy(proxyCfg v1.ProxyConfigurer) {
 	delete(old, proxyCfg.GetBaseConfig().Name)
 
 	c.ProxyCfgs = old
-	c.cli.UpdateAllConfigurer(lo.Values(c.ProxyCfgs), lo.Values(c.VisitorCfgs))
+	frpx.UpdateClientConfigurers(c.cli, c.Common, lo.Values(c.ProxyCfgs), lo.Values(c.VisitorCfgs))
 }
 
 func (c *clientImpl) RemoveVisitor(visitorCfg v1.VisitorConfigurer) {
@@ -126,7 +126,7 @@ func (c *clientImpl) RemoveVisitor(visitorCfg v1.VisitorConfigurer) {
 	delete(old, visitorCfg.GetBaseConfig().Name)
 
 	c.VisitorCfgs = old
-	c.cli.UpdateAllConfigurer(lo.Values(c.ProxyCfgs), lo.Values(c.VisitorCfgs))
+	frpx.UpdateClientConfigurers(c.cli, c.Common, lo.Values(c.ProxyCfgs), lo.Values(c.VisitorCfgs))
 }
 
 func (c *clientImpl) GetProxyStatus(name string) (*frpx.ProxyWorkingStatus, bool) {
