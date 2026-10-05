@@ -74,7 +74,6 @@
 //	v1.VisitorConfigurer.Complete       config.go
 //	pkg/plugin/server.Request/Response  plugin.go
 //	pkg/plugin/server.LoginContent      plugin.go
-//	pkg/msg.NewProxy                    msg.go
 //	pkg/util/log.Logger                 log.go
 //
 // Things that moved in v0.68 and are now settled here, recorded so the next bump is not
