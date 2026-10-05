@@ -923,6 +923,21 @@
         "level": "日志级别",
         "max_days": "日志保留天数",
         "disable_print_color": "禁用彩色输出"
+      },
+      "http_plugins": {
+        "description": "frps 会在所选操作时调用这些 HTTP 接口，并可能拒绝该操作。它们在面板自身的认证之前执行。",
+        "panel_entry": "由面板管理，始终追加在最后。",
+        "name": "名称",
+        "addr": "地址",
+        "path": "路径",
+        "ops": "操作",
+        "login_warning": "处理 Login 的插件在面板认证之前执行，可以拒绝或改写该服务端的所有客户端登录。",
+        "tls_verify": "校验 TLS 证书（仅限 https 地址）",
+        "add": "添加插件",
+        "remove": "删除插件",
+        "reserved_name": "该名称保留给面板的认证插件。",
+        "ops_required": "请至少选择一个操作。",
+        "duplicate_name": "插件名称不能重复。"
       }
     },
     "create": {
@@ -985,7 +1000,8 @@
       "transport": "传输与 TLS",
       "ssh_gateway": "SSH 隧道网关",
       "dashboard": "控制台与指标",
-      "logging": "日志"
+      "logging": "日志",
+      "http_plugins": "HTTP 插件"
     }
   },
   "auth": {

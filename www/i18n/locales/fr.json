@@ -933,6 +933,21 @@
         "level": "Niveau de journalisation",
         "max_days": "Conservation des journaux (jours)",
         "disable_print_color": "Désactiver la couleur"
+      },
+      "http_plugins": {
+        "description": "frps appelle ces points de terminaison HTTP pour les opérations choisies et peut les refuser. Ils s'exécutent avant l'authentification du panneau.",
+        "panel_entry": "Géré par le panneau ; toujours ajouté en dernier.",
+        "name": "Nom",
+        "addr": "Adresse",
+        "path": "Chemin",
+        "ops": "Opérations",
+        "login_warning": "Un plugin qui gère Login s'exécute avant l'authentification du panneau et peut refuser ou réécrire chaque connexion client de ce serveur.",
+        "tls_verify": "Vérifier le certificat TLS (adresses https uniquement)",
+        "add": "Ajouter un plugin",
+        "remove": "Supprimer le plugin",
+        "reserved_name": "Ce nom est réservé au plugin d'authentification du panneau.",
+        "ops_required": "Sélectionnez au moins une opération.",
+        "duplicate_name": "Les noms de plugin doivent être uniques."
       }
     },
     "create": {
@@ -995,7 +1010,8 @@
       "transport": "Transport et TLS",
       "ssh_gateway": "Passerelle SSH",
       "dashboard": "Tableau de bord et métriques",
-      "logging": "Journalisation"
+      "logging": "Journalisation",
+      "http_plugins": "Plugins HTTP"
     }
   },
   "auth": {

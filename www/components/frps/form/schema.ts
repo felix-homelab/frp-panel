@@ -51,6 +51,45 @@ const LogFields = z.object({
   disablePrintColor: z.boolean().optional(),
 })
 
+// frp's SupportedHTTPPluginOps (pkg/config/v1/validation/validation.go). frp rejects
+// any other value, and the master validates before storing (BUG-11).
+export const HTTPPluginOps = ['Login', 'NewProxy', 'CloseProxy', 'Ping', 'NewWorkConn', 'NewUserConn'] as const
+
+// The panel's own frps auth plugin (defs.FRP_Plugin_Multiuser). The backend drops any
+// entry by this name and appends its own (conf.WithFRPsAuthPlugin), so the form never
+// edits it and must not let a user entry take the name.
+export const PANEL_AUTH_PLUGIN_NAME = 'multiuser'
+
+const HTTPPluginEntrySchema = z
+  .object({
+    name: ZodStringSchema.refine((v) => v !== PANEL_AUTH_PLUGIN_NAME, {
+      message: 'server.form.http_plugins.reserved_name',
+    }),
+    addr: ZodStringSchema,
+    path: ZodStringOptionalSchema,
+    ops: z.array(z.enum(HTTPPluginOps)).min(1, { message: 'server.form.http_plugins.ops_required' }),
+    tlsVerify: z.boolean().optional(),
+  })
+  // Keep keys a newer frp may add, the same reason the form merges over loadedConfig.
+  .passthrough()
+
+const HTTPPluginListSchema = z
+  .array(HTTPPluginEntrySchema)
+  .optional()
+  .superRefine((plugins, ctx) => {
+    const seen = new Set<string>()
+    plugins?.forEach((p, i) => {
+      if (seen.has(p.name)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [i, 'name'],
+          message: 'server.form.http_plugins.duplicate_name',
+        })
+      }
+      seen.add(p.name)
+    })
+  })
+
 export const ServerConfigSchema = z.object({
   // publicHost is a panel-level value, not an frp field: it is stripped before submit
   // and sent as the server_ip request param.
@@ -104,6 +143,19 @@ export const ServerConfigSchema = z.object({
   webServer: WebServerFields.optional(),
   enablePrometheus: z.boolean().optional(),
   log: LogFields.optional(),
+
+  // User entries only; see splitHTTPPlugins.
+  httpPlugins: HTTPPluginListSchema,
+})
+
+/**
+ * Splits a stored httpPlugins list into the user's entries (editable) and the panel's
+ * own auth entry (display only). The stored list normally ends with the panel entry,
+ * because the master appends it before saving.
+ */
+export const splitHTTPPlugins = <T extends { name: string }>(plugins?: T[]) => ({
+  user: (plugins || []).filter((p) => p.name !== PANEL_AUTH_PLUGIN_NAME),
+  panel: (plugins || []).find((p) => p.name === PANEL_AUTH_PLUGIN_NAME),
 })
 
 export const ServerConfigZodSchema = ServerConfigSchema

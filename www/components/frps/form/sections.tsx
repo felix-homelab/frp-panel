@@ -14,6 +14,8 @@ import {
   SwitchField,
 } from '@/components/base/form-field'
 import { LogLevels } from '@/lib/consts'
+import { HTTPPluginOptions } from '@/types/common'
+import { HTTPPluginsFields } from './http_plugins'
 
 type SectionProps = { control: Control<any> }
 
@@ -24,7 +26,10 @@ const Section = ({ value, label, children }: { value: string; label: string; chi
   </AccordionItem>
 )
 
-export const FRPSAdvancedSections = ({ control }: SectionProps) => {
+export const FRPSAdvancedSections = ({
+  control,
+  panelHTTPPlugin,
+}: SectionProps & { panelHTTPPlugin?: HTTPPluginOptions }) => {
   const { t } = useTranslation()
   // frps only serves /metrics from its own web server, so enabling Prometheus without a
   // webServer.port produces nothing. (The panel's own stats do not go through it.)
@@ -188,6 +193,10 @@ export const FRPSAdvancedSections = ({ control }: SectionProps) => {
           name="log.disablePrintColor"
           label={t('server.form.log.disable_print_color')}
         />
+      </Section>
+
+      <Section value="http_plugins" label={t('server.section.http_plugins')}>
+        <HTTPPluginsFields control={control} panelPlugin={panelHTTPPlugin} />
       </Section>
     </Accordion>
   )

@@ -923,6 +923,21 @@
         "level": "日誌等級",
         "max_days": "日誌保留天數",
         "disable_print_color": "停用彩色輸出"
+      },
+      "http_plugins": {
+        "description": "frps 會在所選操作時呼叫這些 HTTP 端點，並可能拒絕該操作。它們在面板自身的認證之前執行。",
+        "panel_entry": "由面板管理，一律附加在最後。",
+        "name": "名稱",
+        "addr": "位址",
+        "path": "路徑",
+        "ops": "操作",
+        "login_warning": "處理 Login 的外掛在面板認證之前執行，可以拒絕或改寫此伺服器的所有用戶端登入。",
+        "tls_verify": "驗證 TLS 憑證（僅限 https 位址）",
+        "add": "新增外掛",
+        "remove": "移除外掛",
+        "reserved_name": "此名稱保留給面板的認證外掛。",
+        "ops_required": "請至少選擇一個操作。",
+        "duplicate_name": "外掛名稱不可重複。"
       }
     },
     "create": {
@@ -985,7 +1000,8 @@
       "transport": "傳輸與 TLS",
       "ssh_gateway": "SSH 隧道閘道",
       "dashboard": "控制台與指標",
-      "logging": "日誌"
+      "logging": "日誌",
+      "http_plugins": "HTTP 外掛"
     }
   },
   "auth": {
