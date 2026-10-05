@@ -676,7 +676,10 @@
       "strip_prefix": "Supprimer le Préfixe",
       "http_user": "Utilisateur HTTP",
       "http_password": "Mot de Passe HTTP",
-      "unix_domain_socket_path": "Chemin du Socket de Domaine Unix"
+      "unix_domain_socket_path": "Chemin du Socket de Domaine Unix",
+      "request_headers": "En-têtes de requête (définir)",
+      "enable_http2": "Activer HTTP/2",
+      "enable_http2_description": "Propose HTTP/2 aux clients via ALPN. frp l'active par défaut."
     },
     "section": {
       "tls": "TLS",

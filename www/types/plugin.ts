@@ -47,6 +47,7 @@ export interface HTTPS2HTTPPluginOptions {
   localAddr?: string
   hostHeaderRewrite?: string
   requestHeaders?: HeaderOperations
+  enableHTTP2?: boolean
   crtPath?: string
   keyPath?: string
 }
@@ -56,6 +57,7 @@ export interface HTTPS2HTTPSPluginOptions {
   localAddr?: string
   hostHeaderRewrite?: string
   requestHeaders?: HeaderOperations
+  enableHTTP2?: boolean
   crtPath?: string
   keyPath?: string
 }

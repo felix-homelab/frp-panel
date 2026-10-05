@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { HTTP2HTTPSPluginOptions } from '@/types/plugin'
 import { useTranslation } from 'react-i18next'
+import { PluginRequestHeadersField } from './shared_fields'
 
 interface Props {
   config: HTTP2HTTPSPluginOptions
@@ -34,6 +35,10 @@ export function HTTP2HTTPSPluginForm({ config, setConfig }: Props) {
         />
       </div>
       {/* You could add a custom HeaderOperations component here */}
+      <PluginRequestHeadersField
+        value={config.requestHeaders}
+        onChange={(requestHeaders) => setConfig({ ...config, requestHeaders })}
+      />
     </div>
   )
 }

@@ -672,7 +672,10 @@
       "strip_prefix": "Strip Prefix",
       "http_user": "HTTP User",
       "http_password": "HTTP Password",
-      "unix_domain_socket_path": "Unix Domain Socket Path"
+      "unix_domain_socket_path": "Unix Domain Socket Path",
+      "request_headers": "Request headers (set)",
+      "enable_http2": "Enable HTTP/2",
+      "enable_http2_description": "Offer HTTP/2 to clients via ALPN. frp enables it when unset."
     },
     "section": {
       "tls": "TLS",

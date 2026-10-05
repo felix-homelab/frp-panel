@@ -668,7 +668,10 @@
       "strip_prefix": "前缀去除",
       "http_user": "HTTP 用户名",
       "http_password": "HTTP 密码",
-      "unix_domain_socket_path": "Unix 域套接字路径"
+      "unix_domain_socket_path": "Unix 域套接字路径",
+      "request_headers": "请求头（设置）",
+      "enable_http2": "启用 HTTP/2",
+      "enable_http2_description": "通过 ALPN 向客户端提供 HTTP/2。未设置时 frp 默认启用。"
     },
     "section": {
       "tls": "TLS",

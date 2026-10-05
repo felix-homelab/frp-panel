@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { HTTPS2HTTPPluginOptions } from '@/types/plugin'
 import { useTranslation } from 'react-i18next'
+import { PluginEnableHTTP2Field, PluginRequestHeadersField } from './shared_fields'
 
 interface Props {
   config: HTTPS2HTTPPluginOptions
@@ -51,6 +52,14 @@ export function HTTPS2HTTPPluginForm({ config, setConfig }: Props) {
           placeholder="/path/to/key.pem"
         />
       </div>
+      <PluginRequestHeadersField
+        value={config.requestHeaders}
+        onChange={(requestHeaders) => setConfig({ ...config, requestHeaders })}
+      />
+      <PluginEnableHTTP2Field
+        value={config.enableHTTP2}
+        onChange={(enableHTTP2) => setConfig({ ...config, enableHTTP2 })}
+      />
     </div>
   )
 }
