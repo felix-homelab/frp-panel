@@ -620,7 +620,7 @@
       },
       "wire_protocol": "內部通訊協定",
       "wire_protocol_description": "v2 為控制通道增加 AEAD 加密。",
-      "wire_protocol_locked": "v2 不可用：需要 frps v0.69 以上，且目前無法確認該伺服器版本。",
+      "wire_protocol_locked": "v2 無法使用：需要此用戶端與伺服器的 agent 都執行 frp v0.69 或更新版本，但目前無法確認（agent 離線、版本過舊無法回報，或用戶端使用外部 frps URL）。",
       "nat_hole_stun_server": "STUN 伺服器",
       "nat_hole_stun_server_description": "XTCP 打洞所需，frp 已提供預設值。",
       "dns_server": "DNS 伺服器",

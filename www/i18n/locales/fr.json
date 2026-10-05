@@ -628,7 +628,7 @@
       },
       "wire_protocol": "Protocole interne",
       "wire_protocol_description": "v2 ajoute le chiffrement AEAD au canal de contrôle.",
-      "wire_protocol_locked": "v2 indisponible : nécessite frps v0.69+, et la version du serveur n’est pas confirmée.",
+      "wire_protocol_locked": "v2 indisponible : il faut frp v0.69 ou plus récent sur l’agent de ce client et sur celui du serveur, ce qui n’est pas confirmé (agent hors ligne ou trop ancien pour l’indiquer, ou URL frps externe).",
       "nat_hole_stun_server": "Serveur STUN",
       "nat_hole_stun_server_description": "Requis pour le NAT hole punching XTCP. frp fournit déjà une valeur par défaut.",
       "dns_server": "Serveur DNS",

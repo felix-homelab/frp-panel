@@ -624,7 +624,7 @@
       },
       "wire_protocol": "Wire protocol",
       "wire_protocol_description": "v2 adds AEAD encryption to the control channel.",
-      "wire_protocol_locked": "v2 is unavailable: it requires frps v0.69 or newer, and this server’s version is not confirmed.",
+      "wire_protocol_locked": "v2 is unavailable: it needs frp v0.69 or newer on both this client’s agent and the server’s agent, and that is not confirmed (an agent is offline or too old to report it, or the client uses an external frps URL).",
       "nat_hole_stun_server": "STUN server",
       "nat_hole_stun_server_description": "Required for XTCP hole punching. Already defaulted by frp.",
       "dns_server": "DNS server",

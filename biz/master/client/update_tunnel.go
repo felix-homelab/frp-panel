@@ -140,6 +140,18 @@ func UpdateFrpcHander(c *app.Context, req *pb.UpdateFRPCRequest) (*pb.UpdateFRPC
 		cli.FrpsUrl = urlToParse
 	}
 
+	// Outside the frpsUrl branch on purpose: it must also catch v2 on the panel-managed path.
+	agentID := lo.Ternary(len(cli.OriginClientID) > 0, cli.OriginClientID, cli.ClientID)
+	if err := checkWireProtocol(cliCfg.Transport.WireProtocol, len(cli.FrpsUrl) > 0,
+		func() string { return agentFrpVersion(c, agentID) },
+		func() string { return agentFrpVersion(c, serverID) },
+	); err != nil {
+		logger.Logger(c).WithError(err).Errorf("rejected wire protocol, client: [%s], server: [%s]", reqClientID, serverID)
+		return &pb.UpdateFRPCResponse{
+			Status: &pb.Status{Code: pb.RespCode_RESP_CODE_INVALID, Message: err.Error()},
+		}, err
+	}
+
 	cliCfg.User = userInfo.GetUserName()
 
 	if cliCfg.Metadatas == nil {
