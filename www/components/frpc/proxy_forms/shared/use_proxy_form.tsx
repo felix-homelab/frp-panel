@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -9,11 +9,12 @@ import { Label } from '@/components/ui/label'
 import { YesIcon } from '@/components/ui/icon'
 import { TypedProxyConfigValid } from '@/lib/consts'
 import { ProxyType, TypedProxyConfig } from '@/types/proxy'
-import { TypedClientPluginOptions } from '@/types/plugin'
+import { ClientPluginType, TypedClientPluginOptions } from '@/types/plugin'
 import { VisitPreview } from '@/components/base/visit-preview'
 import { SwitchWithLabel } from '@/components/base/form-field'
 import PluginConfigForm from '../../client_plugins'
 import { buildProxyConfig, sanitizeProxyDefaults } from './build'
+import { pluginChoices } from './plugins'
 import { ProxyFormProps } from './types'
 
 /**
@@ -38,6 +39,8 @@ export function useProxyForm({
   const [enabled, setEnabled] = useState<boolean>(defaultConfig.enabled !== false)
   const [usePlugin, setUsePlugin] = useState<boolean>(!!defaultConfig.plugin?.type?.length)
   const [pluginConfig, setPluginConfig] = useState<TypedClientPluginOptions | undefined>(defaultConfig.plugin)
+  const storedPluginType: string | undefined = defaultConfig.plugin?.type
+  const supportedPlugins = useMemo(() => pluginChoices(type, storedPluginType), [type, storedPluginType])
   const [isSaveDisabled, setSaveDisabled] = useState(false)
   const timeoutRef = useRef<NodeJS.Timeout | undefined>()
 
@@ -87,6 +90,7 @@ export function useProxyForm({
     setUsePlugin,
     pluginConfig,
     setPluginConfig,
+    supportedPlugins,
     isSaveDisabled,
     server: server?.server,
     submit,
@@ -123,6 +127,7 @@ export const ProxyFormFooter = ({
   setUsePlugin,
   pluginConfig,
   setPluginConfig,
+  supportedPlugins,
   isSaveDisabled,
   children,
 }: {
@@ -132,6 +137,8 @@ export const ProxyFormFooter = ({
   setUsePlugin: (v: boolean) => void
   pluginConfig?: TypedClientPluginOptions
   setPluginConfig: (c: TypedClientPluginOptions) => void
+  /** Plugins this proxy type can use; see PLUGINS_BY_PROXY_TYPE. */
+  supportedPlugins: ClientPluginType[]
   isSaveDisabled: boolean
   children?: React.ReactNode
 }) => {
@@ -139,16 +146,26 @@ export const ProxyFormFooter = ({
   return (
     <>
       <SwitchWithLabel name="enabled" label={t('proxy.form.enabled')} defaultValue={enabled} setValue={setEnabled} />
-      <SwitchWithLabel
-        name="usePlugin"
-        label={t('proxy.form.use_plugin')}
-        defaultValue={usePlugin}
-        setValue={(value) => {
-          setUsePlugin(value)
-          if (!value) setPluginConfig(undefined as unknown as TypedClientPluginOptions)
-        }}
-      />
-      {usePlugin ? <PluginConfigForm defaultPluginConfig={pluginConfig} setPluginConfig={setPluginConfig} /> : null}
+      {/* Hidden when no plugin can work on this type (udp, sudp) -- unless one is
+          already stored, so it can still be switched off. */}
+      {supportedPlugins.length > 0 || usePlugin ? (
+        <SwitchWithLabel
+          name="usePlugin"
+          label={t('proxy.form.use_plugin')}
+          defaultValue={usePlugin}
+          setValue={(value) => {
+            setUsePlugin(value)
+            if (!value) setPluginConfig(undefined as unknown as TypedClientPluginOptions)
+          }}
+        />
+      ) : null}
+      {usePlugin ? (
+        <PluginConfigForm
+          defaultPluginConfig={pluginConfig}
+          setPluginConfig={setPluginConfig}
+          supportedPlugins={supportedPlugins}
+        />
+      ) : null}
       {children}
       <Button type="submit" disabled={isSaveDisabled} variant={'outline'} className="w-full">
         <YesIcon className={`mr-2 h-4 w-4 ${isSaveDisabled ? '' : 'hidden'}`}></YesIcon>
