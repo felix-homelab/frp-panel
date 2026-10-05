@@ -76,6 +76,7 @@
 //	pkg/plugin/server.Request/Response  plugin.go
 //	pkg/plugin/server.LoginContent      plugin.go
 //	pkg/util/log.Logger                 log.go
+//	pkg/util/version.Full               version.go
 //
 // Things that moved in v0.68 and are now settled here, recorded so the next bump is not
 // re-diagnosed from scratch:

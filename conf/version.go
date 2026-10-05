@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"runtime"
 
+	"github.com/VaalaCat/frp-panel/internal/frpx"
 	"github.com/VaalaCat/frp-panel/pb"
 )
 
@@ -24,10 +25,11 @@ type VersionInfo struct {
 	GoVersion  string `json:"goVersion" yaml:"goVersion"`
 	Compiler   string `json:"compiler" yaml:"compiler"`
 	Platform   string `json:"platform" yaml:"platform"`
+	FrpVersion string `json:"frpVersion" yaml:"frpVersion"`
 }
 
 func (v *VersionInfo) String() string {
-	tempStr := "BinVersion: {{.GitVersion}}\nGitCommit: {{.GitCommit}}\nBuildDate: {{.BuildDate}}\nGoVersion: {{.GoVersion}}\nCompiler: {{.Compiler}}\nPlatform: {{.Platform}}"
+	tempStr := "BinVersion: {{.GitVersion}}\nGitCommit: {{.GitCommit}}\nBuildDate: {{.BuildDate}}\nGoVersion: {{.GoVersion}}\nCompiler: {{.Compiler}}\nPlatform: {{.Platform}}\nFrpVersion: {{.FrpVersion}}"
 	temp, err := template.New("version").Parse(tempStr)
 	if err != nil {
 		return ""
@@ -49,6 +51,7 @@ func (v *VersionInfo) ToProto() *pb.ClientVersion {
 		GoVersion:  v.GoVersion,
 		Compiler:   v.Compiler,
 		Platform:   v.Platform,
+		FrpVersion: v.FrpVersion,
 	}
 }
 
@@ -61,5 +64,6 @@ func GetVersion() *VersionInfo {
 		GoVersion:  runtime.Version(),
 		Compiler:   runtime.Compiler,
 		Platform:   fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+		FrpVersion: frpx.Version(),
 	}
 }

@@ -98,6 +98,13 @@ export interface ClientVersion {
      * @generated from protobuf field: string GitBranch = 7 [json_name = "GitBranch"];
      */
     gitBranch: string;
+    /**
+     * The frp library version the agent is built with. Empty from agents that predate
+     * the field, which callers must treat as "too old" (fail closed).
+     *
+     * @generated from protobuf field: string FrpVersion = 8 [json_name = "FrpVersion"];
+     */
+    frpVersion: string;
 }
 /**
  * @generated from protobuf message api_master.GetClientsStatusRequest
@@ -277,7 +284,8 @@ class ClientVersion$Type extends MessageType<ClientVersion> {
             { no: 4, name: "GoVersion", kind: "scalar", jsonName: "GoVersion", T: 9 /*ScalarType.STRING*/ },
             { no: 5, name: "Compiler", kind: "scalar", jsonName: "Compiler", T: 9 /*ScalarType.STRING*/ },
             { no: 6, name: "Platform", kind: "scalar", jsonName: "Platform", T: 9 /*ScalarType.STRING*/ },
-            { no: 7, name: "GitBranch", kind: "scalar", jsonName: "GitBranch", T: 9 /*ScalarType.STRING*/ }
+            { no: 7, name: "GitBranch", kind: "scalar", jsonName: "GitBranch", T: 9 /*ScalarType.STRING*/ },
+            { no: 8, name: "FrpVersion", kind: "scalar", jsonName: "FrpVersion", T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<ClientVersion>): ClientVersion {
@@ -289,6 +297,7 @@ class ClientVersion$Type extends MessageType<ClientVersion> {
         message.compiler = "";
         message.platform = "";
         message.gitBranch = "";
+        message.frpVersion = "";
         if (value !== undefined)
             reflectionMergePartial<ClientVersion>(this, message, value);
         return message;
@@ -318,6 +327,9 @@ class ClientVersion$Type extends MessageType<ClientVersion> {
                     break;
                 case /* string GitBranch = 7 [json_name = "GitBranch"];*/ 7:
                     message.gitBranch = reader.string();
+                    break;
+                case /* string FrpVersion = 8 [json_name = "FrpVersion"];*/ 8:
+                    message.frpVersion = reader.string();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -352,6 +364,9 @@ class ClientVersion$Type extends MessageType<ClientVersion> {
         /* string GitBranch = 7 [json_name = "GitBranch"]; */
         if (message.gitBranch !== "")
             writer.tag(7, WireType.LengthDelimited).string(message.gitBranch);
+        /* string FrpVersion = 8 [json_name = "FrpVersion"]; */
+        if (message.frpVersion !== "")
+            writer.tag(8, WireType.LengthDelimited).string(message.frpVersion);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

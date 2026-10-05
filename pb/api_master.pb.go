@@ -166,14 +166,17 @@ func (x *ClientStatus) GetConnectTime() int64 {
 }
 
 type ClientVersion struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	GitVersion    string                 `protobuf:"bytes,1,opt,name=GitVersion,proto3" json:"GitVersion,omitempty"`
-	GitCommit     string                 `protobuf:"bytes,2,opt,name=GitCommit,proto3" json:"GitCommit,omitempty"`
-	BuildDate     string                 `protobuf:"bytes,3,opt,name=BuildDate,proto3" json:"BuildDate,omitempty"`
-	GoVersion     string                 `protobuf:"bytes,4,opt,name=GoVersion,proto3" json:"GoVersion,omitempty"`
-	Compiler      string                 `protobuf:"bytes,5,opt,name=Compiler,proto3" json:"Compiler,omitempty"`
-	Platform      string                 `protobuf:"bytes,6,opt,name=Platform,proto3" json:"Platform,omitempty"`
-	GitBranch     string                 `protobuf:"bytes,7,opt,name=GitBranch,proto3" json:"GitBranch,omitempty"`
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	GitVersion string                 `protobuf:"bytes,1,opt,name=GitVersion,proto3" json:"GitVersion,omitempty"`
+	GitCommit  string                 `protobuf:"bytes,2,opt,name=GitCommit,proto3" json:"GitCommit,omitempty"`
+	BuildDate  string                 `protobuf:"bytes,3,opt,name=BuildDate,proto3" json:"BuildDate,omitempty"`
+	GoVersion  string                 `protobuf:"bytes,4,opt,name=GoVersion,proto3" json:"GoVersion,omitempty"`
+	Compiler   string                 `protobuf:"bytes,5,opt,name=Compiler,proto3" json:"Compiler,omitempty"`
+	Platform   string                 `protobuf:"bytes,6,opt,name=Platform,proto3" json:"Platform,omitempty"`
+	GitBranch  string                 `protobuf:"bytes,7,opt,name=GitBranch,proto3" json:"GitBranch,omitempty"`
+	// The frp library version the agent is built with. Empty from agents that predate
+	// the field, which callers must treat as "too old" (fail closed).
+	FrpVersion    string `protobuf:"bytes,8,opt,name=FrpVersion,proto3" json:"FrpVersion,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -253,6 +256,13 @@ func (x *ClientVersion) GetPlatform() string {
 func (x *ClientVersion) GetGitBranch() string {
 	if x != nil {
 		return x.GitBranch
+	}
+	return ""
+}
+
+func (x *ClientVersion) GetFrpVersion() string {
+	if x != nil {
+		return x.FrpVersion
 	}
 	return ""
 }
@@ -584,7 +594,7 @@ const file_api_master_proto_rawDesc = "" +
 	"\n" +
 	"\b_versionB\a\n" +
 	"\x05_addrB\x0f\n" +
-	"\r_connect_time\"\xdf\x01\n" +
+	"\r_connect_time\"\xff\x01\n" +
 	"\rClientVersion\x12\x1e\n" +
 	"\n" +
 	"GitVersion\x18\x01 \x01(\tR\n" +
@@ -594,7 +604,10 @@ const file_api_master_proto_rawDesc = "" +
 	"\tGoVersion\x18\x04 \x01(\tR\tGoVersion\x12\x1a\n" +
 	"\bCompiler\x18\x05 \x01(\tR\bCompiler\x12\x1a\n" +
 	"\bPlatform\x18\x06 \x01(\tR\bPlatform\x12\x1c\n" +
-	"\tGitBranch\x18\a \x01(\tR\tGitBranch\"m\n" +
+	"\tGitBranch\x18\a \x01(\tR\tGitBranch\x12\x1e\n" +
+	"\n" +
+	"FrpVersion\x18\b \x01(\tR\n" +
+	"FrpVersion\"m\n" +
 	"\x17GetClientsStatusRequest\x123\n" +
 	"\vclient_type\x18\x01 \x01(\x0e2\x12.common.ClientTypeR\n" +
 	"clientType\x12\x1d\n" +

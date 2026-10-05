@@ -28,6 +28,9 @@ message ClientVersion {
 	string Compiler = 5;
 	string Platform = 6;
   string GitBranch = 7;
+  // The frp library version the agent is built with. Empty from agents that predate
+  // the field, which callers must treat as "too old" (fail closed).
+  string FrpVersion = 8;
 }
 
 message GetClientsStatusRequest {
