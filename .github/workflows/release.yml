@@ -14,9 +14,12 @@
 #      assets. An explicit permissions block overrides the repo default, so this works
 #      without depending on a repo setting that a re-fork or a settings reset would lose.
 #
-#   2. No `ko` / Docker Hub push. Those steps need DOCKERHUB_USERNAME and DOCKERHUB_TOKEN,
-#      which are not set here, and they are hardcoded to docker.io/vaalacat/frp-panel --
-#      upstream's namespace, not ours.
+#   2. Container images go to GitHub Container Registry (ghcr.io/<owner>/<repo>), not
+#      Docker Hub. Upstream's ko steps need DOCKERHUB_USERNAME and DOCKERHUB_TOKEN, which
+#      are not set here, and are hardcoded to docker.io/vaalacat/frp-panel -- upstream's
+#      namespace. GHCR takes this workflow's own token (`packages: write`), so there is no
+#      registry secret to manage. The images themselves are built exactly like upstream's:
+#      ko with .ko.yaml (alpine base, every platform alpine ships) and .ko.workerd.yaml.
 #
 #   3. Release notes are the tag's section of CHANGELOG.md, and a tag without one is not
 #      released (.github/scripts/changelog-section.sh).
@@ -35,6 +38,8 @@ on:
 
 permissions:
   contents: write
+  # Pushing container images to ghcr.io.
+  packages: write
 
 jobs:
   release:
@@ -107,3 +112,34 @@ jobs:
               --notes "Rolling build of ${GITHUB_REF_NAME}."
           fi
           gh release upload latest dist/* --clobber
+
+      # Last on purpose: an image problem must never hold back the binaries above.
+      # setup-ko logs in to ghcr.io with this job's token and sets
+      # KO_DOCKER_REPO=ghcr.io/<owner>/<repo>; --bare pushes to exactly that name.
+      - name: Setup ko
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: ko-build/setup-ko@v0.9
+        with:
+          version: v0.19.1
+
+      # The build above left the frontend in cmd/frpp/out, which the binary embeds.
+      # The source label is what links the GHCR package to this repository.
+      - name: Publish container images
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          labels=(
+            --image-label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+            --image-label "org.opencontainers.image.version=${GITHUB_REF_NAME}"
+            --image-label "org.opencontainers.image.revision=${GITHUB_SHA}"
+            --image-label "org.opencontainers.image.licenses=AGPL-3.0"
+          )
+          ko build ./cmd/frpp --sbom=none --bare "${labels[@]}" -t "${GITHUB_REF_NAME}" -t latest
+
+          # The workerd variant (Cloudflare workerd as the base, for agents that run
+          # Workers). KO_CONFIG_PATH takes a directory, hence the copy.
+          mkdir -p "${RUNNER_TEMP}/ko-workerd"
+          cp .ko.workerd.yaml "${RUNNER_TEMP}/ko-workerd/.ko.yaml"
+          KO_CONFIG_PATH="${RUNNER_TEMP}/ko-workerd" \
+            ko build ./cmd/frpp --sbom=none --bare "${labels[@]}" \
+            -t "${GITHUB_REF_NAME}-workerd" -t latest-workerd
