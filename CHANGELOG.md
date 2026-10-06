@@ -30,6 +30,8 @@ refer to [`FEATURE-MATRIX.md`](FEATURE-MATRIX.md) and [`ROADMAP.md`](ROADMAP.md)
 
 ## [Unreleased]
 
+## [v0.10.2] - 2026-10-06
+
 Upgrade order is unchanged: Servers, then the Master, then Clients. The fixes marked *agent* only take
 effect on agents running this version.
 
