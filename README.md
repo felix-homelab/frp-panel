@@ -27,8 +27,10 @@ else on this page describes the original project, which still applies. What this
 - **Safer advanced options.** Newer frp features such as wire protocol v2 are only offered when both
   agents involved run a version that supports them.
 - **Your own frps plugins.** Add your own frp server plugins next to the panel's built-in one.
-- **Binaries only.** Releases contain binaries for Linux, macOS, Windows and Android; this fork
-  publishes **no Docker images**.
+- **Its own downloads.** Releases contain binaries for Linux, macOS, Windows and Android, and Docker
+  images are published to **`ghcr.io/felix-homelab/frp-panel`** (`:latest`, `:<version>`, and
+  `-workerd` variants). Upstream's Docker instructions work unchanged with the image name swapped
+  for `vaalacat/frp-panel`. Images start with the first release after v0.10.1.
 
 Good to know:
 
