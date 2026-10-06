@@ -21,7 +21,9 @@ refer to [`FEATURE-MATRIX.md`](FEATURE-MATRIX.md) and [`ROADMAP.md`](ROADMAP.md)
     for all nine client plugins (upstream: seven), and full frpc / frps settings forms, so nearly
     everything that upstream only reaches through the raw JSON editor has a form.
   - Many fixes for config that was silently lost or rejected — listed per release below.
-  - Releases are built by the fork's own `release.yml`: binaries only, **no Docker images**.
+  - Releases are built by the fork's own `release.yml`. Container images go to
+    `ghcr.io/felix-homelab/frp-panel` instead of upstream's `docker.io/vaalacat/frp-panel`, starting
+    with the first release after v0.10.1; v0.10.0 and v0.10.1 have binaries only.
   - **Not yet changed:** `install.sh`, `install.ps1`, the in-app upgrade and the "download" links in the
     UI still fetch **upstream's** binaries (ROADMAP `REL-01`). Install this fork's binaries from its
     [releases page](https://github.com/felix-homelab/frp-panel/releases) instead.
@@ -41,6 +43,11 @@ effect on agents running this version.
   server's agent run frp v0.69 or newer, and not for clients that use an external frps URL. The Master
   re-checks this on every save, so a v2 config can no longer reach an agent that cannot speak it.
 - Agents now report the frp version they are built with (`CAP-01`); it is also printed by `version`.
+- **Docker images** (`REL-04`). Each release publishes `ghcr.io/felix-homelab/frp-panel:<tag>` and
+  `:latest` for every platform Alpine supports (amd64, arm64, arm/v6, arm/v7, 386, ppc64le, riscv64,
+  s390x), plus `:<tag>-workerd` and `:latest-workerd` (amd64, arm64) for agents that run Workers.
+  They are built like upstream's images, so upstream's Docker instructions apply with the image name
+  swapped.
 
 ### Changed
 - **Proxy forms offer only plugins that work for the proxy type** (`PLG-05`): for example no
